@@ -1,6 +1,6 @@
 import express from "express";
 import multer from "multer";
-import { supabase } from "../config/supabase.js";
+import { getSupabaseClient } from "../config/supabase.js";
 
 const router = express.Router();
 
@@ -40,6 +40,13 @@ const docxUpload = multer({
 
 router.post("/image", imageUpload.single("image"), async (req, res) => {
   try {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      return res.status(500).json({
+        error: "Supabase not configured"
+      });
+    }
+
     // Validate file exists
     if (!req.file) {
       console.error("POST /image: No file in request");
@@ -113,6 +120,13 @@ router.post("/image", imageUpload.single("image"), async (req, res) => {
 
 router.post("/docx", docxUpload.single("file"), async (req, res) => {
   try {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      return res.status(500).json({
+        error: "Supabase not configured"
+      });
+    }
+
     if (!req.file) {
       return res.status(400).json({ error: "No docx file" });
     }

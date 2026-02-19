@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { supabase } from "../config/supabase.js";
+import { getSupabaseClient } from "../config/supabase.js";
 
 const router = Router();
 
@@ -50,9 +50,10 @@ function normalizeBlog(row) {
 
 router.get("/", async (_req, res) => {
   try {
+    const supabase = getSupabaseClient();
     if (!supabase) {
       return res.status(500).json({
-        error: "Supabase not initialized"
+        error: "Supabase not configured"
       });
     }
 
@@ -74,6 +75,13 @@ router.get("/", async (_req, res) => {
 
 router.get("/public", async (_req, res) => {
   try {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      return res.status(500).json({
+        error: "Supabase not configured"
+      });
+    }
+
     const { data, error } = await supabase
       .from("blogs")
       .select("*")
@@ -93,6 +101,13 @@ router.get("/public", async (_req, res) => {
 
 router.get("/:id", async (req, res) => {
   try {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      return res.status(500).json({
+        error: "Supabase not configured"
+      });
+    }
+
     const { data, error } = await supabase
       .from("blogs")
       .select("*")
@@ -116,6 +131,13 @@ router.get("/:id", async (req, res) => {
 
 router.post("/", async (req, res) => {
   try {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      return res.status(500).json({
+        error: "Supabase not configured"
+      });
+    }
+
     console.log("POST /blogs - Request body:", JSON.stringify(req.body, null, 2));
     
     const title = (req.body.title || "").toString().trim();
@@ -169,6 +191,13 @@ router.post("/", async (req, res) => {
 
 router.put("/:id", async (req, res) => {
   try {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      return res.status(500).json({
+        error: "Supabase not configured"
+      });
+    }
+
     console.log("PUT /blogs/:id - Request body:", JSON.stringify(req.body, null, 2));
     
     const { data: current, error: fetchError } = await supabase
@@ -235,6 +264,13 @@ router.put("/:id", async (req, res) => {
 
 router.delete("/:id", async (req, res) => {
   try {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      return res.status(500).json({
+        error: "Supabase not configured"
+      });
+    }
+
     const { data, error } = await supabase
       .from("blogs")
       .delete()

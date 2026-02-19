@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { supabase } from "../config/supabase.js";
+import { getSupabaseClient } from "../config/supabase.js";
 
 const router = Router();
 
@@ -49,31 +49,39 @@ function normalizeCaseStudy(row) {
 }
 
 router.get("/", async (_req, res) => {
-  if (!supabase) {
-    return res.status(500).json({
-      error: "Supabase not initialized",
-      details: "Environment variables may be missing"
-    });
+  try {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      return res.status(500).json({
+        error: "Supabase not configured"
+      });
+    }
+
+    const { data, error } = await supabase
+      .from("case_studies")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      throw error;
+    }
+
+    res.json((data || []).map(normalizeCaseStudy));
+  } catch (error) {
+    console.error("GET / error:", error);
+    return res.status(500).json({ error: error.message });
   }
-
-  const { data, error } = await supabase
-    .from("case_studies")
-    .select("*")
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    console.error("Supabase error:", error);
-    return res.status(500).json({
-      error: error.message,
-      details: error
-    });
-  }
-
-  res.json((data || []).map(normalizeCaseStudy));
 });
 
 router.get("/public", async (_req, res) => {
   try {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      return res.status(500).json({
+        error: "Supabase not configured"
+      });
+    }
+
     const { data, error } = await supabase
       .from("case_studies")
       .select("*")
@@ -81,19 +89,25 @@ router.get("/public", async (_req, res) => {
       .order("created_at", { ascending: false });
 
     if (error) {
-      console.error("GET /api/case-studies/public error:", error);
       throw error;
     }
 
     res.json((data || []).map(normalizeCaseStudy));
-  } catch (err) {
-    console.error("GET /api/case-studies/public caught error:", err);
-    return res.status(500).json({ error: "Failed to fetch published case studies" });
+  } catch (error) {
+    console.error("GET /public error:", error);
+    return res.status(500).json({ error: error.message });
   }
 });
 
 router.get("/:id", async (req, res) => {
   try {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      return res.status(500).json({
+        error: "Supabase not configured"
+      });
+    }
+
     const { data, error } = await supabase
       .from("case_studies")
       .select("*")
@@ -109,13 +123,21 @@ router.get("/:id", async (req, res) => {
     }
 
     res.json(normalizeCaseStudy(data));
-  } catch (err) {
-    return res.status(500).json({ error: "Failed to fetch case study" });
+  } catch (error) {
+    console.error("GET /:id error:", error);
+    return res.status(500).json({ error: error.message });
   }
 });
 
 router.post("/", async (req, res) => {
   try {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      return res.status(500).json({
+        error: "Supabase not configured"
+      });
+    }
+
     console.log("POST /case-studies - Request body:", JSON.stringify(req.body, null, 2));
     
     const title = (req.body.title || "").toString().trim();
@@ -161,14 +183,21 @@ router.post("/", async (req, res) => {
 
     console.log("Case study created successfully:", data.id);
     res.status(201).json(normalizeCaseStudy(data));
-  } catch (err) {
-    console.error("POST /case-studies error:", err.message, err);
-    return res.status(500).json({ error: "Failed to create case study", details: err.message });
+  } catch (error) {
+    console.error("POST / error:", error);
+    return res.status(500).json({ error: error.message });
   }
 });
 
 router.put("/:id", async (req, res) => {
   try {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      return res.status(500).json({
+        error: "Supabase not configured"
+      });
+    }
+
     console.log("PUT /case-studies/:id - Request body:", JSON.stringify(req.body, null, 2));
     
     const { data: current, error: fetchError } = await supabase
@@ -227,14 +256,21 @@ router.put("/:id", async (req, res) => {
 
     console.log("Case study updated successfully:", data.id);
     res.json(normalizeCaseStudy(data));
-  } catch (err) {
-    console.error("PUT /case-studies/:id error:", err.message, err);
-    return res.status(500).json({ error: "Failed to update case study", details: err.message });
+  } catch (error) {
+    console.error("PUT /:id error:", error);
+    return res.status(500).json({ error: error.message });
   }
 });
 
 router.delete("/:id", async (req, res) => {
   try {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      return res.status(500).json({
+        error: "Supabase not configured"
+      });
+    }
+
     const { data, error } = await supabase
       .from("case_studies")
       .delete()
@@ -248,8 +284,9 @@ router.delete("/:id", async (req, res) => {
     }
 
     res.status(204).send();
-  } catch (err) {
-    return res.status(500).json({ error: "Failed to delete case study" });
+  } catch (error) {
+    console.error("DELETE /:id error:", error);
+    return res.status(500).json({ error: error.message });
   }
 });
 
