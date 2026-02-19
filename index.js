@@ -68,6 +68,7 @@ console.log("✅ Case studies routes mounted: /api/case-studies/*");
 app.use("/api/uploads", uploadsRouter);
 console.log("✅ Uploads routes mounted: /api/uploads/*");
 
+console.log("Mounting portfolio route");
 app.use("/api/portfolio", portfolioRouter);
 console.log("✅ Portfolio routes mounted: /api/portfolio/*");
 

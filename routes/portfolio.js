@@ -3,8 +3,13 @@ import { getSupabaseClient } from "../config/supabase.js";
 
 const router = Router();
 
-// GET / - Return all portfolio items ordered by created_at DESC
-router.get("/", async (req, res) => {
+// Test route to verify router is working
+router.get("/", (req, res) => {
+  res.json({ message: "Portfolio route working" });
+});
+
+// GET /all - Return all portfolio items ordered by created_at DESC
+router.get("/all", async (req, res) => {
   try {
     const supabase = getSupabaseClient();
     if (!supabase) {
