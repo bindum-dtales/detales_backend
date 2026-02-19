@@ -7,6 +7,7 @@ import cors from "cors";
 import blogsRouter from "./routes/blogs.js";
 import caseStudiesRouter from "./routes/case-studies.js";
 import uploadsRouter from "./routes/uploads.js";
+import portfolioRouter from "./routes/portfolio.js";
 import { getSupabaseStatus } from "./config/supabase.js";
 
 const app = express();
@@ -50,6 +51,7 @@ app.get("/api/test", (_req, res) => {
     endpoints: [
       "GET /api/blogs/public",
       "GET /api/case-studies/public",
+      "GET /api/portfolio/public",
       "GET /api/test"
     ]
   });
@@ -65,6 +67,9 @@ console.log("✅ Case studies routes mounted: /api/case-studies/*");
 
 app.use("/api/uploads", uploadsRouter);
 console.log("✅ Uploads routes mounted: /api/uploads/*");
+
+app.use("/api/portfolio", portfolioRouter);
+console.log("✅ Portfolio routes mounted: /api/portfolio/*");
 
 // 404 handler for undefined routes
 app.use((req, res) => {
@@ -88,6 +93,7 @@ app.listen(PORT, "0.0.0.0", () => {
   console.log(`   GET  /api/test`);
   console.log(`   GET  /api/blogs/public`);
   console.log(`   GET  /api/case-studies/public`);
+  console.log(`   GET  /api/portfolio/public`);
   console.log(`   POST /api/uploads`);
   console.log("=".repeat(50) + "\n");
 });
