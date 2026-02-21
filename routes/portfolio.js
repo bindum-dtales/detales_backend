@@ -9,8 +9,7 @@ router.get("/", async (req, res) => {
 
     const { data, error } = await supabase
       .from("portfolio")
-      .select("*")
-      .order("created_at", { ascending: false });
+      .select("*");
 
     if (error) {
       console.error(error);
