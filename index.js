@@ -1,3 +1,6 @@
+import dotenv from "dotenv";
+dotenv.config();
+
 import express from "express";
 import cors from "cors";
 
@@ -26,6 +29,11 @@ app.use("/api/uploads", uploadsRoute);
 
 // Debug environment variables
 app.get("/api/debug-env", (req, res) => {
+  console.log("DEBUG: Checking environment variables...");
+  console.log("DEBUG: SUPABASE_URL =", process.env.SUPABASE_URL ? "loaded" : "missing");
+  console.log("DEBUG: SUPABASE_SERVICE_ROLE_KEY =", process.env.SUPABASE_SERVICE_ROLE_KEY ? "loaded" : "missing");
+  console.log("DEBUG: SUPABASE_BUCKET =", process.env.SUPABASE_BUCKET || "missing");
+  
   res.json({
     url: process.env.SUPABASE_URL || null,
     key: process.env.SUPABASE_SERVICE_ROLE_KEY ? "exists" : null,
