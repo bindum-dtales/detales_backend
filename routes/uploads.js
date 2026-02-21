@@ -1,6 +1,6 @@
 import express from "express";
 import multer from "multer";
-import { getSupabaseClient } from "../config/supabase.js";
+import { getSupabaseClient, getSupabaseBucket } from "../config/supabase.js";
 
 const router = express.Router();
 
@@ -47,9 +47,7 @@ router.post("/image", imageUpload.single("image"), async (req, res) => {
       });
     }
 
-    if (!process.env.SUPABASE_BUCKET) {
-      return res.status(500).json({ error: "SUPABASE_BUCKET missing" });
-    }
+    const bucket = getSupabaseBucket();
 
     // Validate file exists
     if (!req.file) {
@@ -74,7 +72,7 @@ router.post("/image", imageUpload.single("image"), async (req, res) => {
 
     // Upload to Supabase
     const { data: uploadData, error: uploadError } = await supabase.storage
-      .from(process.env.SUPABASE_BUCKET)
+      .from(bucket)
       .upload(filePath, req.file.buffer, {
         contentType: req.file.mimetype,
         upsert: false
@@ -94,7 +92,7 @@ router.post("/image", imageUpload.single("image"), async (req, res) => {
 
     // Get public URL
     const { data: urlData } = supabase.storage
-      .from(process.env.SUPABASE_BUCKET)
+      .from(bucket)
       .getPublicUrl(filePath);
 
     if (!urlData || !urlData.publicUrl) {
@@ -131,9 +129,7 @@ router.post("/docx", docxUpload.single("file"), async (req, res) => {
       });
     }
 
-    if (!process.env.SUPABASE_BUCKET) {
-      return res.status(500).json({ error: "SUPABASE_BUCKET missing" });
-    }
+    const bucket = getSupabaseBucket();
 
     if (!req.file) {
       return res.status(400).json({ error: "No docx file" });
@@ -142,7 +138,7 @@ router.post("/docx", docxUpload.single("file"), async (req, res) => {
     const filePath = `docs/${Date.now()}-${req.file.originalname}`;
 
     const { error } = await supabase.storage
-      .from(process.env.SUPABASE_BUCKET)
+      .from(bucket)
       .upload(filePath, req.file.buffer, {
         contentType: req.file.mimetype,
       });
@@ -150,7 +146,7 @@ router.post("/docx", docxUpload.single("file"), async (req, res) => {
     if (error) throw error;
 
     const { data } = supabase.storage
-      .from(process.env.SUPABASE_BUCKET)
+      .from(bucket)
       .getPublicUrl(filePath);
 
     res.json({ url: data.publicUrl });

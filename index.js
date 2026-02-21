@@ -1,12 +1,3 @@
-import dotenv from "dotenv";
-dotenv.config();
-
-console.log("=== FORCED ENV LOAD ===");
-console.log("SUPABASE_URL:", process.env.SUPABASE_URL);
-console.log("SUPABASE_SERVICE_ROLE_KEY exists:", !!process.env.SUPABASE_SERVICE_ROLE_KEY);
-console.log("SUPABASE_BUCKET:", process.env.SUPABASE_BUCKET);
-console.log("========================");
-
 import express from "express";
 import cors from "cors";
 import portfolioRoute from "./routes/portfolio.js";
@@ -26,18 +17,8 @@ app.get("/api/test", (req, res) => {
 
 app.get("/api/env-check", (req, res) => {
   res.json({
-    hasUrl: !!process.env.SUPABASE_URL,
-    hasKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
-    bucket: process.env.SUPABASE_BUCKET || null
-  });
-});
-
-app.get("/api/full-env", (req, res) => {
-  res.json({
-    SUPABASE_URL: process.env.SUPABASE_URL || null,
-    SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY ? "LOADED" : null,
-    SUPABASE_BUCKET: process.env.SUPABASE_BUCKET || null,
-    NODE_ENV: process.env.NODE_ENV || null
+    status: "Backend is running",
+    version: "1.0.0"
   });
 });
 
