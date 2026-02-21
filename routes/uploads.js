@@ -47,6 +47,10 @@ router.post("/image", imageUpload.single("image"), async (req, res) => {
       });
     }
 
+    if (!process.env.SUPABASE_BUCKET) {
+      return res.status(500).json({ error: "SUPABASE_BUCKET missing" });
+    }
+
     // Validate file exists
     if (!req.file) {
       console.error("POST /image: No file in request");
@@ -125,6 +129,10 @@ router.post("/docx", docxUpload.single("file"), async (req, res) => {
       return res.status(500).json({
         error: "Supabase not configured"
       });
+    }
+
+    if (!process.env.SUPABASE_BUCKET) {
+      return res.status(500).json({ error: "SUPABASE_BUCKET missing" });
     }
 
     if (!req.file) {

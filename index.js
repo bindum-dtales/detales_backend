@@ -1,3 +1,6 @@
+import dotenv from "dotenv";
+dotenv.config();
+
 import express from "express";
 import cors from "cors";
 import portfolioRoute from "./routes/portfolio.js";
@@ -12,6 +15,14 @@ app.get("/api/test", (req, res) => {
   res.json({
     status: "API working",
     timestamp: new Date().toISOString()
+  });
+});
+
+app.get("/api/env-check", (req, res) => {
+  res.json({
+    hasUrl: !!process.env.SUPABASE_URL,
+    hasKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+    bucket: process.env.SUPABASE_BUCKET || null
   });
 });
 
