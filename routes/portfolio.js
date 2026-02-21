@@ -3,32 +3,30 @@ import { getSupabaseClient } from "../config/supabase.js";
 
 const router = express.Router();
 
-router.get("/", async (req, res) => {
+router.get("/", async (_req, res) => {
   try {
     const supabase = getSupabaseClient();
 
-    const response = await supabase
-      .from("portfolio")
-      .select("*");
-
-    if (!response) {
-      return res.status(500).json({ error: "No response from Supabase" });
-    }
-
-    if (response.error) {
-      console.error("Supabase portfolio error:", response.error);
+    if (!supabase) {
       return res.status(500).json({
-        error: response.error.message || "Supabase query failed"
+        error: "Supabase not configured"
       });
     }
 
-    return res.json(response.data || []);
+    const { data, error } = await supabase
+      .from("portfolio")
+      .select("*");
 
-  } catch (err) {
-    console.error("Portfolio route crashed:", err);
+    if (error) {
+      throw error;
+    }
+
+    return res.json(data || []);
+
+  } catch (error) {
+    console.error("GET /portfolio error:", error);
     return res.status(500).json({
-      error: "Portfolio route failed",
-      message: err.message
+      error: error.message
     });
   }
 });
