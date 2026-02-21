@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import portfolioRoute from "./routes/portfolio.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -13,6 +14,8 @@ app.get("/api/test", (req, res) => {
     timestamp: new Date().toISOString()
   });
 });
+
+app.use("/api/portfolio", portfolioRoute);
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
