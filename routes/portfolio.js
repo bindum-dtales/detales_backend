@@ -7,20 +7,29 @@ router.get("/", async (req, res) => {
   try {
     const supabase = getSupabaseClient();
 
-    const { data, error } = await supabase
+    const response = await supabase
       .from("portfolio")
       .select("*");
 
-    if (error) {
-      console.error(error);
-      return res.status(500).json({ error: error.message });
+    if (!response) {
+      return res.status(500).json({ error: "No response from Supabase" });
     }
 
-    return res.json(data);
+    if (response.error) {
+      console.error("Supabase portfolio error:", response.error);
+      return res.status(500).json({
+        error: response.error.message || "Supabase query failed"
+      });
+    }
+
+    return res.json(response.data || []);
 
   } catch (err) {
-    console.error("Portfolio fetch error:", err);
-    return res.status(500).json({ error: err.message || "Failed to fetch portfolio items" });
+    console.error("Portfolio route crashed:", err);
+    return res.status(500).json({
+      error: "Portfolio route failed",
+      message: err.message
+    });
   }
 });
 
