@@ -1,18 +1,32 @@
 import { createClient } from "@supabase/supabase-js";
 
-const SUPABASE_URL = "https://upkfbqjlrlufflknkv.supabase.co";
-const SUPABASE_SERVICE_ROLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVwa2ZidHFsanJybHVmZmxrbmt2Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2ODk4ODIwOCwiZXhwIjoyMDg0NTY0MjA4fQ.wIQe5KZAZFdKst5s1v9TbH844D0xqHpoOFstVTUnOUM";
-const SUPABASE_BUCKET = "dtales-media";
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const SUPABASE_BUCKET = process.env.SUPABASE_BUCKET;
 
-let client = null;
+if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+  console.error("Missing Supabase environment variables.");
+}
+
+let client;
 
 export function getSupabaseClient() {
-  if (client) return client;
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error("Supabase is not configured properly.");
+  }
 
-  client = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+  if (!client) {
+    client = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+      auth: { persistSession: false }
+    });
+  }
+
   return client;
 }
 
 export function getSupabaseBucket() {
+  if (!SUPABASE_BUCKET) {
+    throw new Error("SUPABASE_BUCKET is not defined.");
+  }
   return SUPABASE_BUCKET;
 }
