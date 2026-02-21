@@ -4,13 +4,9 @@ import { getSupabaseClient } from "../config/supabase.js";
 const router = express.Router();
 
 router.get("/", async (req, res) => {
-  const supabase = getSupabaseClient();
-
-  if (!supabase) {
-    return res.status(500).json({ error: "Supabase not configured" });
-  }
-
   try {
+    const supabase = getSupabaseClient();
+
     const { data, error } = await supabase
       .from("portfolio")
       .select("*")
@@ -25,7 +21,7 @@ router.get("/", async (req, res) => {
 
   } catch (err) {
     console.error("Portfolio fetch error:", err);
-    return res.status(500).json({ error: "Failed to fetch portfolio items" });
+    return res.status(500).json({ error: err.message || "Failed to fetch portfolio items" });
   }
 });
 

@@ -1,15 +1,12 @@
 console.log("INDEX FILE LOADED");
 
-// import dotenv from "dotenv";
-// dotenv.config();
-
 import express from "express";
 import cors from "cors";
 
-// import portfolioRoute from "./routes/portfolio.js";
-// import blogsRoute from "./routes/blogs.js";
-// import caseStudiesRoute from "./routes/case-studies.js";
-// import uploadsRoute from "./routes/uploads.js";
+import portfolioRoute from "./routes/portfolio.js";
+import blogsRoute from "./routes/blogs.js";
+import caseStudiesRoute from "./routes/case-studies.js";
+import uploadsRoute from "./routes/uploads.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -29,10 +26,15 @@ app.get("/api/test", (req, res) => {
 });
 
 // Mount routes
-// app.use("/api/portfolio", portfolioRoute);
-// app.use("/api/blogs", blogsRoute);
-// app.use("/api/case-studies", caseStudiesRoute);
-// app.use("/api/uploads", uploadsRoute);
+try {
+  app.use("/api/portfolio", portfolioRoute);
+  app.use("/api/blogs", blogsRoute);
+  app.use("/api/case-studies", caseStudiesRoute);
+  app.use("/api/uploads", uploadsRoute);
+  console.log("✓ All routes mounted successfully");
+} catch (err) {
+  console.error("✗ Route mounting failed:", err);
+}
 
 // Debug environment variables
 app.get("/api/debug-env", (req, res) => {
