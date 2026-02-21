@@ -1,3 +1,9 @@
+console.log("=== STARTUP ENV CHECK ===");
+console.log("SUPABASE_URL:", process.env.SUPABASE_URL);
+console.log("SUPABASE_SERVICE_ROLE_KEY exists:", !!process.env.SUPABASE_SERVICE_ROLE_KEY);
+console.log("SUPABASE_BUCKET:", process.env.SUPABASE_BUCKET);
+console.log("==========================");
+
 import express from "express";
 import cors from "cors";
 import portfolioRoute from "./routes/portfolio.js";
