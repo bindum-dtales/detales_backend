@@ -11,12 +11,7 @@ process.on("unhandledRejection", (err) => {
 });
 
 const app = express();
-const PORT = process.env.PORT;
-
-if (!PORT) {
-  console.error("PORT is undefined");
-  process.exit(1);
-}
+const PORT = process.env.PORT || 3000;
 
 app.use(cors({ origin: true }));
 app.use(express.json({ limit: "10mb" }));
