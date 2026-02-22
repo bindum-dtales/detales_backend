@@ -1,3 +1,4 @@
+console.log("BLOGS MODULE LOADED");
 import { Router } from "express";
 import { getSupabaseClient } from "../config/supabase.js";
 
