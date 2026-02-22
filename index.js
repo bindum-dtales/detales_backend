@@ -11,30 +11,20 @@ process.on("unhandledRejection", (err) => {
 });
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT;
+
+if (!PORT) {
+  console.error("PORT is undefined");
+  process.exit(1);
+}
 
 app.use(cors({ origin: true }));
 app.use(express.json({ limit: "10mb" }));
 
 app.get("/", (req, res) => {
-  res.send("SERVER RUNNING");
+  res.send("SERVER RUNNING WITHOUT ROUTES");
 });
 
-app.get("/api/test", (req, res) => {
-  res.json({ status: "API running" });
-});
-
-// STATIC imports (no dynamic import)
-import portfolioRoute from "./routes/portfolio.js";
-import blogsRoute from "./routes/blogs.js";
-import caseStudiesRoute from "./routes/case-studies.js";
-import uploadsRoute from "./routes/uploads.js";
-
-app.use("/api/portfolio", portfolioRoute);
-app.use("/api/blogs", blogsRoute);
-app.use("/api/case-studies", caseStudiesRoute);
-app.use("/api/uploads", uploadsRoute);
-
-app.listen(PORT, () => {
+app.listen(PORT, "0.0.0.0", () => {
   console.log("SERVER STARTED ON PORT", PORT);
 });
