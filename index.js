@@ -24,6 +24,15 @@ app.get("/env-check", (req, res) => {
   });
 });
 
+app.get("/test-fetch", async (req, res) => {
+  try {
+    const response = await fetch("https://google.com");
+    res.json({ ok: response.ok });
+  } catch (err) {
+    res.json({ error: err.message });
+  }
+});
+
 app.use("/api/portfolio", portfolioRoute);
 app.use("/api/blogs", blogsRoute);
 app.use("/api/case-studies", caseStudiesRoute);
