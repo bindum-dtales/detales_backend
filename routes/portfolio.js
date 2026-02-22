@@ -1,12 +1,10 @@
 import express from "express";
-import { getSupabaseClient } from "../config/supabase.js";
+import supabase from "../config/supabase.js";
 
 const router = express.Router();
 
 router.get("/", async (req, res) => {
   try {
-    const supabase = getSupabaseClient();
-
     if (!supabase) {
       return res.status(500).json({
         error: "Supabase not configured"
