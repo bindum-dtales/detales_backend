@@ -26,7 +26,7 @@ app.get("/env-check", (req, res) => {
 
 app.get("/test-fetch", async (req, res) => {
   try {
-    const response = await fetch("https://google.com");
+    const response = await fetch("https://upkfbqljrnlufflknkv.supabase.co");
 
     res.json({
       ok: response.ok,
