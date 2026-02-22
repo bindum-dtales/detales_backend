@@ -1,8 +1,23 @@
 import express from "express";
 import multer from "multer";
-import { getSupabaseClient, getSupabaseBucket } from "../config/supabase.js";
+import { getSupabaseClient } from "../config/supabase.js";
 
 const router = express.Router();
+
+async function resolveBucketName(supabase) {
+  const { data, error } = await supabase.storage.listBuckets();
+  if (error) {
+    console.error("Upload route error:", error);
+    return null;
+  }
+
+  const bucket = data?.[0]?.name || null;
+  if (!bucket) {
+    console.error("Upload route error: No storage buckets available");
+  }
+
+  return bucket;
+}
 
 // Create separate multer instances to prevent HTTP2 protocol errors
 // Image uploads: strict filtering, 4MB limit
@@ -47,7 +62,12 @@ router.post("/image", imageUpload.single("image"), async (req, res) => {
       });
     }
 
-    const bucket = getSupabaseBucket();
+    const bucket = await resolveBucketName(supabase);
+    if (!bucket) {
+      return res.status(500).json({
+        error: "Supabase not configured"
+      });
+    }
 
     // Validate file exists
     if (!req.file) {
@@ -104,19 +124,11 @@ router.post("/image", imageUpload.single("image"), async (req, res) => {
     return res.status(200).json({ url: urlData.publicUrl });
 
   } catch (err) {
-    console.error("POST /image: Unexpected error:", {
-      message: err.message,
-      stack: err.stack,
-      error: err
+    console.error("Upload route error:", err);
+    return res.status(500).json({
+      error: "Upload failed",
+      details: err.message
     });
-    
-    // Ensure we always return JSON, never let Express default error handler run
-    if (!res.headersSent) {
-      return res.status(500).json({ 
-        error: "Internal server error during image upload",
-        message: err.message 
-      });
-    }
   }
 });
 
@@ -129,7 +141,12 @@ router.post("/docx", docxUpload.single("file"), async (req, res) => {
       });
     }
 
-    const bucket = getSupabaseBucket();
+    const bucket = await resolveBucketName(supabase);
+    if (!bucket) {
+      return res.status(500).json({
+        error: "Supabase not configured"
+      });
+    }
 
     if (!req.file) {
       return res.status(400).json({ error: "No docx file" });
@@ -151,8 +168,11 @@ router.post("/docx", docxUpload.single("file"), async (req, res) => {
 
     res.json({ url: data.publicUrl });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Docx upload failed" });
+    console.error("Upload route error:", err);
+    return res.status(500).json({
+      error: "Upload failed",
+      details: err.message
+    });
   }
 });
 

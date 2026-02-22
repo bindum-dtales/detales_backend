@@ -5,6 +5,7 @@ import cors from "cors";
 import portfolioRoute from "./routes/portfolio.js";
 import blogsRoute from "./routes/blogs.js";
 import caseStudiesRoute from "./routes/case-studies.js";
+import uploadsRoute from "./routes/uploads.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -19,6 +20,7 @@ app.get("/", (req, res) => {
 app.use("/api/portfolio", portfolioRoute);
 app.use("/api/blogs", blogsRoute);
 app.use("/api/case-studies", caseStudiesRoute);
+app.use("/api/uploads", uploadsRoute);
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log("SERVER STARTED ON PORT", PORT);
