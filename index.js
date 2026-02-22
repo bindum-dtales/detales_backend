@@ -7,6 +7,11 @@ import blogsRoute from "./routes/blogs.js";
 import caseStudiesRoute from "./routes/case-studies.js";
 import uploadsRoute from "./routes/uploads.js";
 
+console.log("ENV CHECK START:");
+console.log("SUPABASE_URL:", process.env.SUPABASE_URL);
+console.log("SUPABASE_SERVICE_ROLE_KEY:", process.env.SUPABASE_SERVICE_ROLE_KEY ? "EXISTS" : "MISSING");
+console.log("NODE_ENV:", process.env.NODE_ENV);
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
