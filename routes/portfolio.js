@@ -49,7 +49,7 @@ router.post("/", async (req, res) => {
     const { data, error } = await supabase
       .from("portfolio")
       .insert([
-        { title, project_link, category, cover_image_url }
+        { title, link: project_link, category, cover_image_url }
       ])
       .select()
       .single();
