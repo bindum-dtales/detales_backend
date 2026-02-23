@@ -36,12 +36,15 @@ app.use("/api", limiter);
 console.log("Environment:", process.env.NODE_ENV);
 console.log("Frontend URL:", process.env.FRONTEND_URL);
 
-app.get("/", (req, res) => {
-  res.send("SERVER RUNNING - STEP 6");
+// Health route must be defined BEFORE all other routes
+app.get("/health", (req, res) => {
+  return res.status(200).json({ status: "ok" });
 });
 
-app.get("/health", (req, res) => {
-  res.status(200).json({ status: "ok" });
+console.log("Health route registered");
+
+app.get("/", (req, res) => {
+  res.send("SERVER RUNNING - STEP 6");
 });
 
 app.use("/api/portfolio", portfolioRoute);
@@ -51,6 +54,11 @@ app.use("/api/uploads", uploadsRoute);
 
 app.get("/ping", (req, res) => {
   res.json({ ok: true });
+});
+
+// Catch-all route for undefined routes
+app.use((req, res) => {
+  res.status(404).json({ error: "Route not found" });
 });
 
 app.listen(PORT, () => {
