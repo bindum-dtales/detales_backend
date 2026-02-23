@@ -36,4 +36,39 @@ router.get("/", async (req, res) => {
   }
 });
 
+router.post("/", async (req, res) => {
+  try {
+    const supabase = getSupabaseClient();
+
+    if (!supabase) {
+      return res.status(500).json({ error: "Supabase not configured" });
+    }
+
+    const { title, project_link, category, cover_image_url } = req.body;
+
+    const { data, error } = await supabase
+      .from("portfolio")
+      .insert([
+        { title, project_link, category, cover_image_url }
+      ])
+      .select()
+      .single();
+
+    if (error) {
+      return res.status(500).json({
+        error: "Insert failed",
+        details: error.message
+      });
+    }
+
+    return res.status(201).json(data);
+
+  } catch (err) {
+    return res.status(500).json({
+      error: "Portfolio create failed",
+      details: err.message
+    });
+  }
+});
+
 export default router;
