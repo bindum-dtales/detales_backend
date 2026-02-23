@@ -66,6 +66,25 @@ app.get("/test-fetch", async (req, res) => {
   }
 });
 
+app.get("/test-supabase", async (req, res) => {
+  try {
+    const r = await fetch(process.env.SUPABASE_URL, {
+      headers: {
+        apikey: process.env.SUPABASE_SERVICE_ROLE_KEY,
+      },
+    });
+
+    res.json({
+      status: r.status,
+      ok: r.ok
+    });
+  } catch (err) {
+    res.json({
+      error: err.message
+    });
+  }
+});
+
 app.listen(PORT, "0.0.0.0", () => {
   console.log("SERVER STARTED ON PORT", PORT);
 });
