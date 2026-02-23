@@ -56,6 +56,15 @@ app.get("/ping", (req, res) => {
   res.json({ ok: true });
 });
 
+app.get("/debug-supabase", async (req, res) => {
+  try {
+    const r = await fetch(process.env.SUPABASE_URL);
+    res.json({ status: r.status });
+  } catch (err) {
+    res.json({ error: err.message });
+  }
+});
+
 // Catch-all route for undefined routes
 app.use((req, res) => {
   res.status(404).json({ error: "Route not found" });

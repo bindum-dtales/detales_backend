@@ -7,12 +7,24 @@ export function getSupabaseClient() {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!url || !key) {
-    console.warn("Supabase environment variables missing.");
+    console.error("Supabase env variables missing.");
+    return null;
+  }
+
+  if (!url.startsWith("https://")) {
+    console.error("SUPABASE_URL must start with https://");
+    console.error("Current value:", url);
     return null;
   }
 
   if (!cachedClient) {
-    cachedClient = createClient(url, key);
+    try {
+      cachedClient = createClient(url, key);
+      console.log("Supabase client initialized successfully.");
+    } catch (err) {
+      console.error("Supabase client init failed:", err);
+      return null;
+    }
   }
 
   return cachedClient;
