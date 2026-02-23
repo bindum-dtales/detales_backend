@@ -54,6 +54,12 @@ router.get("/", async (_req, res) => {
     console.log("=== BLOGS DEBUG START ===");
     console.log("SUPABASE_URL:", process.env.SUPABASE_URL);
     console.log("SUPABASE_SERVICE_ROLE_KEY exists:", !!process.env.SUPABASE_SERVICE_ROLE_KEY);
+    console.log(
+      "SUPABASE_SERVICE_ROLE_KEY length:",
+      process.env.SUPABASE_SERVICE_ROLE_KEY
+        ? process.env.SUPABASE_SERVICE_ROLE_KEY.length
+        : "undefined"
+    );
 
     const supabase = getSupabaseClient();
     if (!supabase) {
