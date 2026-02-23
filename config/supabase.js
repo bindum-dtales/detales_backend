@@ -1,4 +1,3 @@
-import fetch from "node-fetch";
 import { createClient } from "@supabase/supabase-js";
 
 let cachedClient = null;
@@ -12,19 +11,9 @@ export function getSupabaseClient() {
     return null;
   }
 
-  if (!url.startsWith("https://")) {
-    console.error("SUPABASE_URL must start with https://");
-    console.error("Current value:", url);
-    return null;
-  }
-
   if (!cachedClient) {
     try {
-      cachedClient = createClient(url, key, {
-        global: {
-          fetch: fetch
-        }
-      });
+      cachedClient = createClient(url, key);
       console.log("Supabase client initialized successfully.");
     } catch (err) {
       console.error("Supabase client init failed:", err);

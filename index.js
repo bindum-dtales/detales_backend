@@ -11,6 +11,7 @@ import caseStudiesRoute from "./routes/case-studies.js";
 import uploadsRoute from "./routes/uploads.js";
 
 const app = express();
+app.set("trust proxy", 1);
 const PORT = process.env.PORT || 10000;
 const isProduction = process.env.NODE_ENV === "production";
 
