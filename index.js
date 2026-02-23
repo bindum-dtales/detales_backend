@@ -19,6 +19,7 @@ import dotenv from "dotenv";
 dotenv.config();
 import express from "express";
 import cors from "cors";
+import dns from "dns/promises";
 
 import portfolioRoute from "./routes/portfolio.js";
 import blogsRoute from "./routes/blogs.js";
@@ -82,6 +83,46 @@ app.get("/test-supabase", async (req, res) => {
     res.json({
       error: err.message
     });
+  }
+});
+
+app.get("/deep-test", async (req, res) => {
+  try {
+    const results = {};
+
+    // 1️⃣ DNS lookup test
+    try {
+      const lookup = await dns.lookup("google.com");
+      results.googleDNS = lookup;
+    } catch (e) {
+      results.googleDNS = e.message;
+    }
+
+    try {
+      const lookup = await dns.lookup("supabase.co");
+      results.supabaseDNS = lookup;
+    } catch (e) {
+      results.supabaseDNS = e.message;
+    }
+
+    // 2️⃣ Direct fetch test
+    try {
+      const r = await fetch("https://google.com");
+      results.googleFetch = r.status;
+    } catch (e) {
+      results.googleFetch = e.message;
+    }
+
+    try {
+      const r = await fetch(process.env.SUPABASE_URL + "/rest/v1/");
+      results.supabaseFetch = r.status;
+    } catch (e) {
+      results.supabaseFetch = e.message;
+    }
+
+    res.json(results);
+  } catch (err) {
+    res.json({ error: err.message });
   }
 });
 
