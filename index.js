@@ -4,6 +4,7 @@ import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
+import { Readable } from "stream";
 
 import portfolioRoute from "./routes/portfolio.js";
 import blogsRoute from "./routes/blogs.js";
@@ -56,6 +57,85 @@ app.use("/api/uploads", uploadsRoute);
 app.get("/ping", (req, res) => {
   res.json({ ok: true });
 });
+
+// ============================================================================
+// IMAGE PROXY ROUTE - Bypasses ISP routing issues for Supabase images
+// ============================================================================
+const SUPABASE_STORAGE_URL = "https://upkfbtqljrnlufflknkv.supabase.co/storage/v1/object/public/dtales-media/images";
+
+app.get("/media/:filename", async (req, res) => {
+  try {
+    const { filename } = req.params;
+
+    // Security: Validate filename to prevent directory traversal
+    if (!filename || filename.includes("..") || filename.includes("/")) {
+      return res.status(400).json({ error: "Invalid filename" });
+    }
+
+    // Construct the full Supabase URL
+    const supabaseUrl = `${SUPABASE_STORAGE_URL}/${filename}`;
+
+    // Fetch image from Supabase with timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+
+    const response = await fetch(supabaseUrl, {
+      signal: controller.signal,
+      headers: {
+        "User-Agent": "dtales-backend-proxy/1.0"
+      }
+    });
+
+    clearTimeout(timeoutId);
+
+    // Handle Supabase errors
+    if (!response.ok) {
+      console.error(`Supabase fetch failed: ${response.status} for ${filename}`);
+      return res.status(response.status).json({ 
+        error: "Image not found or inaccessible" 
+      });
+    }
+
+    // Get content type from Supabase response
+    const contentType = response.headers.get("content-type") || "application/octet-stream";
+    const contentLength = response.headers.get("content-length");
+
+    // Set response headers
+    res.setHeader("Content-Type", contentType);
+    res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    
+    if (contentLength) {
+      res.setHeader("Content-Length", contentLength);
+    }
+
+    // Convert Web ReadableStream to Node.js stream and pipe to response
+    const nodeStream = Readable.fromWeb(response.body);
+    
+    nodeStream.on("error", (err) => {
+      console.error(`Stream error for ${filename}:`, err.message);
+      if (!res.headersSent) {
+        res.status(500).json({ error: "Stream error" });
+      }
+    });
+
+    nodeStream.pipe(res);
+
+  } catch (err) {
+    if (err.name === "AbortError") {
+      console.error(`Request timeout for ${req.params.filename}`);
+      if (!res.headersSent) {
+        res.status(504).json({ error: "Gateway timeout" });
+      }
+    } else {
+      console.error("Media proxy error:", err.message);
+      if (!res.headersSent) {
+        res.status(500).json({ error: "Internal server error" });
+      }
+    }
+  }
+});
+// ============================================================================
 
 app.get("/debug-supabase", async (req, res) => {
   try {
