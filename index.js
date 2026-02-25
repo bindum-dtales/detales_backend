@@ -105,6 +105,12 @@ app.get("/media/:filename", async (req, res) => {
     res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
     res.setHeader("X-Content-Type-Options", "nosniff");
     
+    // Fix CORS + Cross-Origin-Resource-Policy for cross-origin image loading
+    res.removeHeader("Cross-Origin-Resource-Policy");
+    res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+    res.setHeader("Access-Control-Allow-Origin", "https://dtales.tech");
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+    
     if (contentLength) {
       res.setHeader("Content-Length", contentLength);
     }
