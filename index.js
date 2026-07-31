@@ -1,32 +1,290 @@
-import dotenv from "dotenv";
-dotenv.config();
+import { createRequire } from "module";
+const require = createRequire(import.meta.url);
+require("dotenv").config();
+
 import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
+import fs from "fs";
+import path from "path";
 import { Readable } from "stream";
+import { getSupabaseClient } from "./config/supabase.js";
 
-import portfolioRoute from "./routes/portfolio.js";
-import blogsRoute from "./routes/blogs.js";
-import caseStudiesRoute from "./routes/case-studies.js";
-import uploadsRoute from "./routes/uploads.js";
+import portfolioRoutes from "./routes/portfolio.js";
+import blogRoutes from "./routes/blogs.js";
+import caseStudyRoutes from "./routes/case-studies.js";
+import uploadRoutes from "./routes/uploads.js";
 
 const app = express();
 app.set("trust proxy", 1);
 const PORT = process.env.PORT || 10000;
 const isProduction = process.env.NODE_ENV === "production";
 
+const CACHE_DIR = path.resolve(process.cwd(), "cache");
+const PORTFOLIO_CACHE_PATH = path.join(CACHE_DIR, "portfolio.json");
+const BLOGS_CACHE_PATH = path.join(CACHE_DIR, "blogs.json");
+const CASE_STUDIES_CACHE_PATH = path.join(CACHE_DIR, "case_studies.json");
+const CACHE_REFRESH_INTERVAL_MS = 300000;
+const SUPABASE_TIMEOUT_MS = 5000;
+const SUPABASE_RETRIES = 3;
+const SUPABASE_RETRY_DELAY_MS = 1000;
+
+function wait(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function runWithTimeout(operation) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), SUPABASE_TIMEOUT_MS);
+
+  try {
+    return await operation(controller.signal);
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+async function runSupabaseQueryWithRetry(queryFactory) {
+  let lastError;
+
+  for (let attempt = 1; attempt <= SUPABASE_RETRIES; attempt += 1) {
+    try {
+      const result = await runWithTimeout(queryFactory);
+
+      if (result.error) {
+        throw result.error;
+      }
+
+      return result.data || [];
+    } catch (error) {
+      lastError = error;
+
+      if (attempt < SUPABASE_RETRIES) {
+        await wait(SUPABASE_RETRY_DELAY_MS);
+      }
+    }
+  }
+
+  throw lastError;
+}
+
+function normalizeBlog(row) {
+  const content = row?.content ?? "";
+  const excerpt = String(content).replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim().slice(0, 200);
+
+  return {
+    id: row.id,
+    title: row.title,
+    slug: row.slug,
+    cover_image_url: row?.cover_image_url ?? null,
+    excerpt,
+    content,
+    published: row.published,
+    created_at: row.created_at,
+    updated_at: row.updated_at
+  };
+}
+
+function normalizeCaseStudy(row) {
+  const content = row?.content ?? "";
+  const excerpt = String(content).replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim().slice(0, 200);
+
+  return {
+    id: row.id,
+    title: row.title,
+    slug: row.slug,
+    cover_image_url: row?.cover_image_url ?? null,
+    excerpt,
+    content,
+    published: row.published,
+    created_at: row.created_at,
+    updated_at: row.updated_at
+  };
+}
+
+async function writeCache(cachePath, data) {
+  await fs.promises.mkdir(CACHE_DIR, { recursive: true });
+  await fs.promises.writeFile(cachePath, JSON.stringify(data, null, 2), "utf8");
+  console.log("[CACHE UPDATED]");
+}
+
+async function refreshPortfolioCache() {
+  try {
+    const supabase = getSupabaseClient();
+
+    if (!supabase) {
+      throw new Error("Supabase client unavailable");
+    }
+
+    const data = await runSupabaseQueryWithRetry(async (signal) => {
+      let query = supabase
+        .from("portfolio")
+        .select("id, title, category, cover_image_url, link")
+        .eq("published", true)
+        .order("created_at", { ascending: false });
+
+      if (typeof query.abortSignal === "function") {
+        query = query.abortSignal(signal);
+      }
+
+      return query;
+    });
+
+    await writeCache(PORTFOLIO_CACHE_PATH, data);
+    console.log("[CACHE REFRESH SUCCESS] portfolio");
+  } catch (error) {
+    console.error("[CACHE REFRESH FAILED] portfolio", error.message);
+    console.error("[SUPABASE ERROR - KEEPING OLD CACHE]");
+  }
+}
+
+async function refreshBlogsCache() {
+  try {
+    const supabase = getSupabaseClient();
+
+    if (!supabase) {
+      throw new Error("Supabase client unavailable");
+    }
+
+    const rows = await runSupabaseQueryWithRetry(async (signal) => {
+      let query = supabase
+        .from("blogs")
+        .select("*")
+        .eq("published", true)
+        .order("created_at", { ascending: false });
+
+      if (typeof query.abortSignal === "function") {
+        query = query.abortSignal(signal);
+      }
+
+      return query;
+    });
+
+    const data = (rows || []).map(normalizeBlog);
+    await writeCache(BLOGS_CACHE_PATH, data);
+    console.log("[CACHE REFRESH SUCCESS] blogs");
+  } catch (error) {
+    console.error("[CACHE REFRESH FAILED] blogs", error.message);
+    console.error("[SUPABASE ERROR - KEEPING OLD CACHE]");
+  }
+}
+
+async function refreshCaseStudiesCache() {
+  try {
+    const supabase = getSupabaseClient();
+
+    if (!supabase) {
+      throw new Error("Supabase client unavailable");
+    }
+
+    const rows = await runSupabaseQueryWithRetry(async (signal) => {
+      let query = supabase
+        .from("case_studies")
+        .select("*")
+        .eq("published", true)
+        .order("created_at", { ascending: false });
+
+      if (typeof query.abortSignal === "function") {
+        query = query.abortSignal(signal);
+      }
+
+      return query;
+    });
+
+    const data = (rows || []).map(normalizeCaseStudy);
+    await writeCache(CASE_STUDIES_CACHE_PATH, data);
+    console.log("[CACHE REFRESH SUCCESS] case_studies");
+  } catch (error) {
+    console.error("[CACHE REFRESH FAILED] case_studies", error.message);
+    console.error("[SUPABASE ERROR - KEEPING OLD CACHE]");
+  }
+}
+
+async function refreshAllCaches() {
+  console.log("[AUTO CACHE REFRESH START]");
+  await Promise.all([
+    refreshPortfolioCache(),
+    refreshBlogsCache(),
+    refreshCaseStudiesCache()
+  ]);
+}
+
+process.on("uncaughtException", (err) => {
+  console.error("[UNCAUGHT EXCEPTION]", err);
+});
+
+process.on("unhandledRejection", (reason) => {
+  console.error("[UNHANDLED PROMISE]", reason);
+});
+
+setInterval(() => {
+  const heapUsed = process.memoryUsage().heapUsed;
+  const oneGb = 1024 * 1024 * 1024;
+
+  if (heapUsed > oneGb) {
+    console.warn("[MEMORY WARNING] High memory usage detected.");
+  }
+}, 60 * 1000);
+
+if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  console.error("[ENV ERROR] SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is missing.");
+  process.exit(1);
+}
+
+const allowedOrigins = isProduction
+  ? [...new Set([process.env.FRONTEND_URL, "https://dtales.tech"].filter(Boolean))]
+  : true;
+
 if (isProduction && !process.env.FRONTEND_URL) {
   console.error("FRONTEND_URL is required in production");
   process.exit(1);
 }
 
-app.use(cors({
-  origin: isProduction ? process.env.FRONTEND_URL : true,
-  credentials: true
-}));
+const corsOptions = {
+  origin: allowedOrigins,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  credentials: true,
+  optionsSuccessStatus: 200
+};
+
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
+
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "https://dtales.tech");
+  res.header("Access-Control-Allow-Headers", "*");
+  res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
+
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(200);
+  }
+
+  return next();
+});
 app.use(express.json({ limit: "10mb" }));
 app.use(helmet());
+
+app.use((req, res, next) => {
+  const timeoutId = setTimeout(() => {
+    console.error(`[REQUEST TIMEOUT] ${req.method} ${req.originalUrl}`);
+
+    if (!res.headersSent) {
+      res.status(504).json({ error: "Request timeout" });
+    }
+  }, 10000);
+
+  const clearRequestTimeout = () => {
+    clearTimeout(timeoutId);
+  };
+
+  res.on("finish", clearRequestTimeout);
+  res.on("close", clearRequestTimeout);
+
+  req.on("aborted", clearRequestTimeout);
+
+  next();
+});
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -38,9 +296,17 @@ app.use("/api", limiter);
 console.log("Environment:", process.env.NODE_ENV);
 console.log("Frontend URL:", process.env.FRONTEND_URL);
 
-// Health route must be defined BEFORE all other routes
-app.get("/health", (req, res) => {
-  return res.status(200).json({ status: "ok" });
+app.use((req, res, next) => {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
+  res.setHeader("Surrogate-Control", "no-store");
+  res.setHeader("CDN-Cache-Control", "no-store");
+  next();
+});
+
+app.get("/api/health", (req, res) => {
+  return res.json({ status: "OK" });
 });
 
 console.log("Health route registered");
@@ -49,10 +315,10 @@ app.get("/", (req, res) => {
   res.send("SERVER RUNNING - STEP 6");
 });
 
-app.use("/api/portfolio", portfolioRoute);
-app.use("/api/blogs", blogsRoute);
-app.use("/api/case-studies", caseStudiesRoute);
-app.use("/api/uploads", uploadsRoute);
+app.use("/api/blogs", blogRoutes);
+app.use("/api/case-studies", caseStudyRoutes);
+app.use("/api/portfolio", portfolioRoutes);
+app.use("/api/uploads", uploadRoutes);
 
 app.get("/ping", (req, res) => {
   res.json({ ok: true });
@@ -184,11 +450,44 @@ app.get("/debug-supabase", async (req, res) => {
   }
 });
 
-// Catch-all route for undefined routes
-app.use((req, res) => {
-  res.status(404).json({ error: "Route not found" });
+app.use((err, req, res, next) => {
+  console.error("[UNHANDLED ERROR]", err);
+
+  if (res.headersSent) {
+    return next(err);
+  }
+
+  return res.status(500).json({ error: "Internal server error" });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+app.use((req, res) => {
+  res.status(404).json({ error: "API route not found" });
 });
+
+const server = app.listen(PORT, () => {
+  console.log("[SERVER STARTED]");
+  console.log("Environment:", process.env.NODE_ENV || "development");
+  console.log("Port:", PORT);
+  console.log("Frontend URL:", process.env.FRONTEND_URL || "not-set");
+});
+
+refreshAllCaches();
+
+setInterval(() => {
+  refreshAllCaches();
+}, CACHE_REFRESH_INTERVAL_MS);
+
+function shutdown(signal) {
+  console.log(`Shutting down server... (${signal})`);
+
+  server.close(() => {
+    process.exit(0);
+  });
+
+  setTimeout(() => {
+    process.exit(0);
+  }, 5000).unref();
+}
+
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));

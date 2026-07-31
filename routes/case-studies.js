@@ -1,7 +1,34 @@
 import { Router } from "express";
+import fs from "fs/promises";
+import path from "path";
 import { getSupabaseClient } from "../config/supabase.js";
 
 const router = Router();
+
+const CACHE_DIR = path.resolve(process.cwd(), "cache");
+const CACHE_FILE = path.join(CACHE_DIR, "case_studies.json");
+const SUPABASE_TIMEOUT_MS = 5000;
+const SUPABASE_RETRIES = 3;
+const SUPABASE_RETRY_DELAY_MS = 1000;
+
+let caseStudiesCache = null;
+let isRevalidating = false;
+
+function setNoCacheHeaders(res) {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  res.setHeader("Pragma", "no-cache");
+  res.setHeader("Expires", "0");
+  res.setHeader("Surrogate-Control", "no-store");
+}
+
+router.use((req, res, next) => {
+  setNoCacheHeaders(res);
+  next();
+});
+
+function wait(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 function stripHtml(html) {
   if (!html) return "";
@@ -14,27 +41,22 @@ function buildExcerpt(html, maxLen = 200) {
 }
 
 function extractContent(bodyContent) {
-  // Content should be a plain string from frontend
   if (typeof bodyContent === "string") {
     return bodyContent;
   }
-  // LEGACY: Handle { html: "..." } format from older frontend
+
   if (bodyContent && typeof bodyContent === "object" && typeof bodyContent.html === "string") {
     return bodyContent.html;
   }
+
   return "";
 }
 
 function normalizeCaseStudy(row) {
-  // Use cover_image_url directly from database (schema column)
   const cover_image_url = row?.cover_image_url ?? null;
-  
-  // Content is plain HTML string from database
   const content = row?.content ?? "";
-  
-  // Generate excerpt from HTML content
   const excerpt = buildExcerpt(content, 200);
-  
+
   return {
     id: row.id,
     title: row.title,
@@ -44,87 +66,219 @@ function normalizeCaseStudy(row) {
     content,
     published: row.published,
     created_at: row.created_at,
-    updated_at: row.updated_at,
+    updated_at: row.updated_at
   };
+}
+
+async function readCacheFile() {
+  try {
+    const raw = await fs.readFile(CACHE_FILE, "utf8");
+    const parsed = JSON.parse(raw);
+
+    if (Array.isArray(parsed)) {
+      return parsed;
+    }
+
+    if (parsed && Array.isArray(parsed.data)) {
+      return parsed.data;
+    }
+
+    return null;
+  } catch (error) {
+    if (error.code !== "ENOENT") {
+      console.error("[CACHE READ ERROR]", error.message);
+    }
+    return null;
+  }
+}
+
+const initialCaseStudiesCache = await readCacheFile();
+
+if (Array.isArray(initialCaseStudiesCache)) {
+  caseStudiesCache = initialCaseStudiesCache;
+}
+
+async function writeCacheFile(data) {
+  try {
+    await fs.mkdir(CACHE_DIR, { recursive: true });
+    await fs.writeFile(CACHE_FILE, JSON.stringify(data, null, 2), "utf8");
+    console.log("[CACHE UPDATED]");
+  } catch (error) {
+    console.error("[CACHE WRITE ERROR]", error.message);
+  }
+}
+
+async function clearCacheFile() {
+  caseStudiesCache = null;
+
+  try {
+    await fs.unlink(CACHE_FILE);
+  } catch (error) {
+    if (error.code !== "ENOENT") {
+      console.error("[CACHE CLEAR ERROR]", error.message);
+    }
+  }
+}
+
+async function loadCachedCaseStudies() {
+  const diskCache = await readCacheFile();
+
+  if (Array.isArray(diskCache)) {
+    if (diskCache.length > 0) {
+      caseStudiesCache = diskCache;
+      return diskCache;
+    }
+
+    const reloadedCache = await readCacheFile();
+
+    if (Array.isArray(reloadedCache)) {
+      if (reloadedCache.length > 0) {
+        caseStudiesCache = reloadedCache;
+        return reloadedCache;
+      }
+    }
+
+    return [];
+  }
+
+  if (Array.isArray(caseStudiesCache)) {
+    return caseStudiesCache;
+  }
+
+  return [];
+}
+
+async function runWithTimeout(operation) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), SUPABASE_TIMEOUT_MS);
+
+  try {
+    return await operation(controller.signal);
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+async function runSupabaseQuery(operation) {
+  let lastError;
+
+  for (let attempt = 1; attempt <= SUPABASE_RETRIES; attempt += 1) {
+    try {
+      const result = await runWithTimeout(operation);
+
+      if (result.error) {
+        throw result.error;
+      }
+
+      return result.data;
+    } catch (error) {
+      lastError = error;
+
+      if (attempt < SUPABASE_RETRIES) {
+        console.log(`[SUPABASE RETRY ${attempt}]`);
+        await wait(SUPABASE_RETRY_DELAY_MS);
+      }
+    }
+  }
+
+  throw lastError;
+}
+
+async function fetchPublicCaseStudiesFromSupabase() {
+  const supabase = getSupabaseClient();
+
+  if (!supabase) {
+    throw new Error("Supabase client unavailable");
+  }
+
+  const rows = await runSupabaseQuery(async (signal) => {
+    let query = supabase
+      .from("case_studies")
+      .select("*")
+      .eq("published", true)
+      .order("created_at", { ascending: false });
+
+    if (typeof query.abortSignal === "function") {
+      query = query.abortSignal(signal);
+    }
+
+    return query;
+  });
+
+  return (rows || []).map(normalizeCaseStudy);
+}
+
+async function refreshCaseStudiesCache() {
+  const freshData = await fetchPublicCaseStudiesFromSupabase();
+  caseStudiesCache = freshData;
+  await writeCacheFile(freshData);
+  return freshData;
+}
+
+function revalidateCaseStudiesInBackground() {
+  if (isRevalidating) {
+    return;
+  }
+
+  isRevalidating = true;
+
+  (async () => {
+    try {
+      await refreshCaseStudiesCache();
+    } catch (error) {
+      console.error("[SUPABASE ERROR - SERVING CACHE]", error.message);
+    } finally {
+      isRevalidating = false;
+    }
+  })();
 }
 
 router.get("/", async (_req, res) => {
   try {
-    const supabase = getSupabaseClient();
-    if (!supabase) {
-      return res.status(500).json({
-        error: "Supabase not configured"
-      });
-    }
+    const data = await loadCachedCaseStudies();
 
-    const { data, error } = await supabase
-      .from("case_studies")
-      .select("*")
-      .order("created_at", { ascending: false });
+    console.log("Case studies served:", data.length);
 
-    if (error) {
-      throw error;
-    }
-
-    res.json((data || []).map(normalizeCaseStudy));
+    return res.status(200).json(data || []);
   } catch (error) {
-    console.error("GET / error:", error);
     return res.status(500).json({ error: error.message });
   }
 });
 
 router.get("/public", async (_req, res) => {
   try {
-    const supabase = getSupabaseClient();
-    if (!supabase) {
-      return res.status(500).json({
-        error: "Supabase not configured"
-      });
-    }
+    const data = await loadCachedCaseStudies();
 
-    const { data, error } = await supabase
-      .from("case_studies")
-      .select("*")
-      .eq("published", true)
-      .order("created_at", { ascending: false });
+    console.log("Case studies served:", data.length);
 
-    if (error) {
-      throw error;
-    }
-
-    res.json((data || []).map(normalizeCaseStudy));
+    return res.status(200).json(data || []);
   } catch (error) {
-    console.error("GET /public error:", error);
     return res.status(500).json({ error: error.message });
   }
 });
 
 router.get("/:id", async (req, res) => {
   try {
-    const supabase = getSupabaseClient();
-    if (!supabase) {
-      return res.status(500).json({
-        error: "Supabase not configured"
-      });
+    const cachedData = await loadCachedCaseStudies();
+
+    if (Array.isArray(cachedData)) {
+      const cachedItem = cachedData.find((item) => String(item.id) === String(req.params.id));
+      if (cachedItem) {
+        return res.status(200).json(cachedItem);
+      }
     }
 
-    const { data, error } = await supabase
-      .from("case_studies")
-      .select("*")
-      .eq("id", req.params.id)
-      .single();
+    const reloadedData = await loadCachedCaseStudies();
+    const reloadedItem = Array.isArray(reloadedData)
+      ? reloadedData.find((item) => String(item.id) === String(req.params.id))
+      : null;
 
-    if (error && error.code !== "PGRST116") {
-      throw error;
+    if (reloadedItem) {
+      return res.status(200).json(reloadedItem);
     }
 
-    if (!data) {
-      return res.status(404).json({ error: "Case study not found" });
-    }
-
-    res.json(normalizeCaseStudy(data));
+    return res.status(404).json({ error: "Case study not found" });
   } catch (error) {
-    console.error("GET /:id error:", error);
     return res.status(500).json({ error: error.message });
   }
 });
@@ -132,57 +286,53 @@ router.get("/:id", async (req, res) => {
 router.post("/", async (req, res) => {
   try {
     const supabase = getSupabaseClient();
+
     if (!supabase) {
       return res.status(500).json({
         error: "Supabase not configured"
       });
     }
 
-    console.log("POST /case-studies - Request body:", JSON.stringify(req.body, null, 2));
-    
     const title = (req.body.title || "").toString().trim();
     const content = extractContent(req.body.content);
     const cover_image_url = req.body.cover_image_url ?? null;
     const published = req.body.published === true;
 
-    console.log("Extracted values:", { title, contentLength: content.length, cover_image_url, published });
-
-    // Validation
     if (!title) {
-      console.error("Validation failed: Title is empty");
       return res.status(400).json({ error: "Title is required" });
     }
 
     if (!content || typeof content !== "string" || !content.trim()) {
-      console.error("Validation failed: Content invalid", { contentType: typeof content, contentLength: content?.length });
       return res.status(400).json({ error: "Content is required (must be HTML string)" });
     }
 
     const excerpt = buildExcerpt(content, 200);
 
-    console.log("Inserting into Supabase:", { title, excerpt, contentLength: content.length, cover_image_url, published });
+    const data = await runSupabaseQuery(async (signal) => {
+      let query = supabase
+        .from("case_studies")
+        .insert([
+          {
+            title,
+            excerpt,
+            content,
+            cover_image_url,
+            published
+          }
+        ])
+        .select()
+        .single();
 
-    const { data, error } = await supabase
-      .from("case_studies")
-      .insert([
-        {
-          title,
-          excerpt,
-          content,
-          cover_image_url,
-          published,
-        },
-      ])
-      .select()
-      .single();
+      if (typeof query.abortSignal === "function") {
+        query = query.abortSignal(signal);
+      }
 
-    if (error) {
-      console.error("Supabase insert error:", error);
-      throw error;
-    }
+      return query;
+    });
 
-    console.log("Case study created successfully:", data.id);
-    res.status(201).json(normalizeCaseStudy(data));
+    await clearCacheFile();
+
+    return res.status(201).json(normalizeCaseStudy(data));
   } catch (error) {
     console.error("POST / error:", error);
     return res.status(500).json({ error: error.message });
@@ -192,26 +342,34 @@ router.post("/", async (req, res) => {
 router.put("/:id", async (req, res) => {
   try {
     const supabase = getSupabaseClient();
+
     if (!supabase) {
       return res.status(500).json({
         error: "Supabase not configured"
       });
     }
 
-    console.log("PUT /case-studies/:id - Request body:", JSON.stringify(req.body, null, 2));
-    
-    const { data: current, error: fetchError } = await supabase
-      .from("case_studies")
-      .select("*")
-      .eq("id", req.params.id)
-      .single();
+    let current;
 
-    if (fetchError && fetchError.code !== "PGRST116") {
-      throw fetchError;
-    }
+    try {
+      current = await runSupabaseQuery(async (signal) => {
+        let query = supabase
+          .from("case_studies")
+          .select("*")
+          .eq("id", req.params.id)
+          .single();
 
-    if (!current) {
-      return res.status(404).json({ error: "Case study not found" });
+        if (typeof query.abortSignal === "function") {
+          query = query.abortSignal(signal);
+        }
+
+        return query;
+      });
+    } catch (error) {
+      if (error.code === "PGRST116") {
+        return res.status(404).json({ error: "Case study not found" });
+      }
+      throw error;
     }
 
     const title = ((req.body.title ?? current.title) || "").toString().trim();
@@ -220,9 +378,6 @@ router.put("/:id", async (req, res) => {
     const cover_image_url = req.body.cover_image_url !== undefined ? req.body.cover_image_url : current.cover_image_url ?? null;
     const published = typeof req.body.published === "boolean" ? req.body.published : current.published === true;
 
-    console.log("Extracted values:", { title, contentLength: content.length, cover_image_url, published });
-
-    // Validation
     if (!title) {
       return res.status(400).json({ error: "Title is required" });
     }
@@ -233,29 +388,31 @@ router.put("/:id", async (req, res) => {
 
     const excerpt = buildExcerpt(content, 200);
 
-    console.log("Updating in Supabase:", { title, excerpt, contentLength: content.length, cover_image_url, published });
+    const data = await runSupabaseQuery(async (signal) => {
+      let query = supabase
+        .from("case_studies")
+        .update({
+          title,
+          excerpt,
+          content,
+          cover_image_url,
+          published,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", req.params.id)
+        .select()
+        .single();
 
-    const { data, error } = await supabase
-      .from("case_studies")
-      .update({
-        title,
-        excerpt,
-        content,
-        cover_image_url,
-        published,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", req.params.id)
-      .select()
-      .single();
+      if (typeof query.abortSignal === "function") {
+        query = query.abortSignal(signal);
+      }
 
-    if (error) {
-      console.error("Supabase update error:", error);
-      throw error;
-    }
+      return query;
+    });
 
-    console.log("Case study updated successfully:", data.id);
-    res.json(normalizeCaseStudy(data));
+    await clearCacheFile();
+
+    return res.json(normalizeCaseStudy(data));
   } catch (error) {
     console.error("PUT /:id error:", error);
     return res.status(500).json({ error: error.message });
@@ -265,25 +422,37 @@ router.put("/:id", async (req, res) => {
 router.delete("/:id", async (req, res) => {
   try {
     const supabase = getSupabaseClient();
+
     if (!supabase) {
       return res.status(500).json({
         error: "Supabase not configured"
       });
     }
 
-    const { data, error } = await supabase
-      .from("case_studies")
-      .delete()
-      .eq("id", req.params.id)
-      .select("id");
+    const data = await runSupabaseQuery(async (signal) => {
+      let query = supabase
+        .from("case_studies")
+        .delete()
+        .eq("id", req.params.id)
+        .select("id");
 
-    if (error) throw error;
+      if (typeof query.abortSignal === "function") {
+        query = query.abortSignal(signal);
+      }
+
+      return query;
+    });
 
     if (!data || data.length === 0) {
       return res.status(404).json({ error: "Case study not found" });
     }
 
-    res.status(204).send();
+    await clearCacheFile();
+
+    return res.status(200).json({
+      success: true,
+      message: "Case study deleted successfully"
+    });
   } catch (error) {
     console.error("DELETE /:id error:", error);
     return res.status(500).json({ error: error.message });

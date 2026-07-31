@@ -161,4 +161,12 @@ router.post("/docx", docxUpload.single("file"), async (req, res) => {
   }
 });
 
+router.use((err, req, res, next) => {
+  if (!err) {
+    return next();
+  }
+
+  return res.status(400).json({ error: err.message || "Upload error" });
+});
+
 export default router;

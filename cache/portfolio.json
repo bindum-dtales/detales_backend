@@ -1,0 +1,23 @@
+[
+  {
+    "id": 10,
+    "title": "AIROWIRE - ENTERPRISE INTEGRITY",
+    "category": "web",
+    "cover_image_url": "https://upkfbtqljrnlufflknkv.supabase.co/storage/v1/object/public/dtales-media/images/1783937386744-Screenshot%202026-07-13%20153917.png",
+    "link": "https://dtalesprototype.my.canva.site/air-08-html"
+  },
+  {
+    "id": 8,
+    "title": "LinkEye Demo",
+    "category": "video",
+    "cover_image_url": "https://upkfbtqljrnlufflknkv.supabase.co/storage/v1/object/public/dtales-media/images/1779169714112-Screenshot%202026-05-19%20111819.png",
+    "link": "https://www.youtube.com/watch?v=8f_Af1fpwLA"
+  },
+  {
+    "id": 5,
+    "title": "Modern Technical Documentation & Marketing Solutions",
+    "category": "video",
+    "cover_image_url": "https://upkfbtqljrnlufflknkv.supabase.co/storage/v1/object/public/dtales-media/images/1771950246049-WhatsApp%20Image%202026-02-24%20at%209.26.46%20PM.jpeg",
+    "link": "https://youtu.be/yENpD7RqfyQ"
+  }
+]
