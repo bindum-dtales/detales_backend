@@ -4,14 +4,22 @@ require("dotenv").config();
 
 import express from "express";
 import cors from "cors";
-import helmet from "helmet";
-import rateLimit from "express-rate-limit";
 import fs from "fs";
 import path from "path";
 import { Readable } from "stream";
 import { getSupabaseClient } from "./config/supabase.js";
 import logger from "./utils/logger.js";
 import requestId from "./middleware/requestId.js";
+import errorHandler from "./middleware/errorHandler.js";
+import {
+  configureTrustProxy,
+  disablePoweredBy,
+  helmetMiddleware,
+  compressionMiddleware,
+  createRateLimiter,
+  bodyLimit
+} from "./middleware/security.js";
+import { supabaseConfig, cacheConfig, serverConfig } from "./config/appConfig.js";
 
 import portfolioRoutes from "./routes/portfolio.js";
 import blogRoutes from "./routes/blogs.js";
@@ -20,19 +28,20 @@ import uploadRoutes from "./routes/uploads.js";
 import healthRoutes from "./routes/health.js";
 
 const app = express();
-app.set("trust proxy", 1);
+configureTrustProxy(app);
+disablePoweredBy(app);
 app.use(requestId);
 const PORT = process.env.PORT || 10000;
 const isProduction = process.env.NODE_ENV === "production";
 
-const CACHE_DIR = path.resolve(process.cwd(), "cache");
-const PORTFOLIO_CACHE_PATH = path.join(CACHE_DIR, "portfolio.json");
-const BLOGS_CACHE_PATH = path.join(CACHE_DIR, "blogs.json");
-const CASE_STUDIES_CACHE_PATH = path.join(CACHE_DIR, "case_studies.json");
-const CACHE_REFRESH_INTERVAL_MS = 300000;
-const SUPABASE_TIMEOUT_MS = 5000;
-const SUPABASE_RETRIES = 3;
-const SUPABASE_RETRY_DELAY_MS = 1000;
+const CACHE_DIR = path.resolve(process.cwd(), cacheConfig.dir);
+const PORTFOLIO_CACHE_PATH = path.join(CACHE_DIR, cacheConfig.files.portfolio);
+const BLOGS_CACHE_PATH = path.join(CACHE_DIR, cacheConfig.files.blogs);
+const CASE_STUDIES_CACHE_PATH = path.join(CACHE_DIR, cacheConfig.files.caseStudies);
+const CACHE_REFRESH_INTERVAL_MS = cacheConfig.refreshIntervalMs;
+const SUPABASE_TIMEOUT_MS = supabaseConfig.timeoutMs;
+const SUPABASE_RETRIES = supabaseConfig.retries;
+const SUPABASE_RETRY_DELAY_MS = supabaseConfig.retryDelayMs;
 
 function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -224,12 +233,11 @@ process.on("unhandledRejection", (reason) => {
 
 setInterval(() => {
   const heapUsed = process.memoryUsage().heapUsed;
-  const oneGb = 1024 * 1024 * 1024;
 
-  if (heapUsed > oneGb) {
+  if (heapUsed > serverConfig.heapWarningThresholdBytes) {
     logger.warn("[MEMORY WARNING] High memory usage detected.");
   }
-}, 60 * 1000);
+}, serverConfig.heapCheckIntervalMs);
 
 if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
   logger.error("[ENV ERROR] SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is missing.");
@@ -266,8 +274,9 @@ app.use((req, res, next) => {
 
   return next();
 });
-app.use(express.json({ limit: "10mb" }));
-app.use(helmet());
+app.use(express.json({ limit: bodyLimit }));
+app.use(helmetMiddleware);
+app.use(compressionMiddleware);
 
 app.use((req, res, next) => {
   const timeoutId = setTimeout(() => {
@@ -276,7 +285,7 @@ app.use((req, res, next) => {
     if (!res.headersSent) {
       res.status(504).json({ error: "Request timeout" });
     }
-  }, 10000);
+  }, serverConfig.requestTimeoutMs);
 
   const clearRequestTimeout = () => {
     clearTimeout(timeoutId);
@@ -290,10 +299,7 @@ app.use((req, res, next) => {
   next();
 });
 
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100
-});
+const limiter = createRateLimiter();
 
 app.use("/api", limiter);
 
@@ -348,7 +354,7 @@ app.get("/media/:filename", async (req, res) => {
 
     // Fetch image from Supabase with timeout
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s timeout
+    const timeoutId = setTimeout(() => controller.abort(), serverConfig.mediaProxyTimeoutMs);
 
     const response = await fetch(supabaseUrl, {
       signal: controller.signal,
@@ -455,15 +461,7 @@ app.get("/debug-supabase", async (req, res) => {
   }
 });
 
-app.use((err, req, res, next) => {
-  logger.error("[UNHANDLED ERROR]", { error: err });
-
-  if (res.headersSent) {
-    return next(err);
-  }
-
-  return res.status(500).json({ error: "Internal server error" });
-});
+app.use(errorHandler);
 
 app.use((req, res) => {
   res.status(404).json({ error: "API route not found" });

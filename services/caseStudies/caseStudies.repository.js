@@ -2,8 +2,8 @@ import { getSupabaseClient } from "../../config/supabase.js";
 import { runSupabaseQuery } from "../../utils/supabaseQuery.js";
 import logger from "../../utils/logger.js";
 import services from "../../constants/services.js";
+import { supabaseConfig } from "../../config/appConfig.js";
 
-const SUPABASE_TIMEOUT_MS = 5000;
 const TABLE = "case_studies";
 
 function getClientOrThrow() {
@@ -30,7 +30,7 @@ function logDbFailure(operation, error) {
 
 async function runQuery(queryFactory, label) {
   try {
-    return await runSupabaseQuery(queryFactory, { timeoutMs: SUPABASE_TIMEOUT_MS });
+    return await runSupabaseQuery(queryFactory, { timeoutMs: supabaseConfig.timeoutMs });
   } catch (error) {
     logDbFailure(label, error);
     throw error;

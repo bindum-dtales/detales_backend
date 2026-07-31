@@ -7,9 +7,7 @@ import { retryAsync } from "../../utils/retry.js";
 import * as portfolioRepository from "./portfolio.repository.js";
 import * as portfolioCache from "./portfolio.cache.js";
 import * as portfolioMapper from "./portfolio.mapper.js";
-
-const SUPABASE_RETRIES = 3;
-const SUPABASE_RETRY_DELAY_MS = 1000;
+import { supabaseConfig } from "../../config/appConfig.js";
 
 function assertSupabaseConfigured() {
   const supabase = portfolioRepository.getClient();
@@ -26,8 +24,8 @@ function assertSupabaseConfigured() {
 async function withRetry(operation, { label, failureMessage }) {
   try {
     const result = await retryAsync(operation, {
-      attempts: SUPABASE_RETRIES,
-      delayMs: SUPABASE_RETRY_DELAY_MS,
+      attempts: supabaseConfig.retries,
+      delayMs: supabaseConfig.retryDelayMs,
       onRetry: ({ attempt, error }) => {
         logger.warn("Supabase retry", {
           service: services.PORTFOLIO,

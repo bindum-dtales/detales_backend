@@ -1,9 +1,11 @@
+import { contentConfig } from "../../config/appConfig.js";
+
 export function stripHtml(html) {
   if (!html) return "";
   return String(html).replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 }
 
-export function buildExcerpt(html, maxLen = 200) {
+export function buildExcerpt(html, maxLen = contentConfig.excerptMaxLength) {
   const text = stripHtml(html);
   return text.length > maxLen ? text.slice(0, maxLen) : text;
 }
@@ -23,7 +25,7 @@ export function extractContent(bodyContent) {
 export function normalizeCaseStudy(row) {
   const cover_image_url = row?.cover_image_url ?? null;
   const content = row?.content ?? "";
-  const excerpt = buildExcerpt(content, 200);
+  const excerpt = buildExcerpt(content);
 
   return {
     id: row.id,

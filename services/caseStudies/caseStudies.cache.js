@@ -1,12 +1,13 @@
 import path from "path";
 import { createFileCache } from "../shared/fileCache.js";
 import services from "../../constants/services.js";
+import { cacheConfig } from "../../config/appConfig.js";
 
-const CACHE_DIR = path.resolve(process.cwd(), "cache");
+const CACHE_DIR = path.resolve(process.cwd(), cacheConfig.dir);
 
 const cache = await createFileCache({
   cacheDir: CACHE_DIR,
-  fileName: "case_studies.json",
+  fileName: cacheConfig.files.caseStudies,
   service: services.CASE_STUDIES
 });
 

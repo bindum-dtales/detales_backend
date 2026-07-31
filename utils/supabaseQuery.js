@@ -1,4 +1,6 @@
-export async function runSupabaseQuery(queryFactory, { timeoutMs = 5000 } = {}) {
+import { supabaseConfig } from "../config/appConfig.js";
+
+export async function runSupabaseQuery(queryFactory, { timeoutMs = supabaseConfig.timeoutMs } = {}) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 

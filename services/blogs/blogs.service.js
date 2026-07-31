@@ -8,9 +8,7 @@ import * as blogsRepository from "./blogs.repository.js";
 import * as blogsCache from "./blogs.cache.js";
 import * as blogsMapper from "./blogs.mapper.js";
 import { validateBlogFields } from "../../validators/blogs.validator.js";
-
-const SUPABASE_RETRIES = 3;
-const SUPABASE_RETRY_DELAY_MS = 1000;
+import { supabaseConfig } from "../../config/appConfig.js";
 
 function assertSupabaseConfigured() {
   const supabase = blogsRepository.getClient();
@@ -26,8 +24,8 @@ function assertSupabaseConfigured() {
 
 async function withRetry(operation, { label }) {
   return retryAsync(operation, {
-    attempts: SUPABASE_RETRIES,
-    delayMs: SUPABASE_RETRY_DELAY_MS,
+    attempts: supabaseConfig.retries,
+    delayMs: supabaseConfig.retryDelayMs,
     onRetry: ({ attempt, error }) => {
       logger.warn("Supabase retry", {
         service: services.BLOGS,
@@ -117,7 +115,7 @@ export async function createBlog(payload) {
     });
   }
 
-  const excerpt = blogsMapper.buildExcerpt(content, 200);
+  const excerpt = blogsMapper.buildExcerpt(content);
 
   let record;
   try {
@@ -171,7 +169,7 @@ export async function updateBlog(id, payload) {
     });
   }
 
-  const excerpt = blogsMapper.buildExcerpt(content, 200);
+  const excerpt = blogsMapper.buildExcerpt(content);
 
   let record;
   try {
