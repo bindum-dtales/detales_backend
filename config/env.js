@@ -1,4 +1,5 @@
 import { createRequire } from "module";
+import validateEnv from "./validateEnv.js";
 
 const require = createRequire(import.meta.url);
 require("dotenv").config();
@@ -13,5 +14,13 @@ export const env = {
 };
 
 export const isProduction = env.NODE_ENV === "production";
+
+const requiredKeys = ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"];
+
+if (isProduction) {
+  requiredKeys.push("FRONTEND_URL");
+}
+
+validateEnv(env, requiredKeys);
 
 export default env;
