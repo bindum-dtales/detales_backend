@@ -16,6 +16,7 @@ import portfolioRoutes from "./routes/portfolio.js";
 import blogRoutes from "./routes/blogs.js";
 import caseStudyRoutes from "./routes/case-studies.js";
 import uploadRoutes from "./routes/uploads.js";
+import healthRoutes from "./routes/health.js";
 
 const app = express();
 app.set("trust proxy", 1);
@@ -320,6 +321,7 @@ app.use("/api/blogs", blogRoutes);
 app.use("/api/case-studies", caseStudyRoutes);
 app.use("/api/portfolio", portfolioRoutes);
 app.use("/api/uploads", uploadRoutes);
+app.use(healthRoutes);
 
 app.get("/ping", (req, res) => {
   res.json({ ok: true });
