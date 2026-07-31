@@ -11,6 +11,7 @@ import path from "path";
 import { Readable } from "stream";
 import { getSupabaseClient } from "./config/supabase.js";
 import logger from "./utils/logger.js";
+import requestId from "./middleware/requestId.js";
 
 import portfolioRoutes from "./routes/portfolio.js";
 import blogRoutes from "./routes/blogs.js";
@@ -20,6 +21,7 @@ import healthRoutes from "./routes/health.js";
 
 const app = express();
 app.set("trust proxy", 1);
+app.use(requestId);
 const PORT = process.env.PORT || 10000;
 const isProduction = process.env.NODE_ENV === "production";
 

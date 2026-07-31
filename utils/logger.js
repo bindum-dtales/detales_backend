@@ -1,7 +1,14 @@
 import { isProduction } from "../config/env.js";
+import { getRequestId } from "./requestContext.js";
 
 function write(level, entry) {
-  const line = JSON.stringify({ timestamp: new Date().toISOString(), level, ...entry });
+  const requestId = getRequestId();
+  const line = JSON.stringify({
+    timestamp: new Date().toISOString(),
+    level,
+    ...(requestId ? { requestId } : {}),
+    ...entry
+  });
 
   if (level === "error") {
     console.error(line);
