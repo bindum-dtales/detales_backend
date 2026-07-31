@@ -10,6 +10,7 @@ import fs from "fs";
 import path from "path";
 import { Readable } from "stream";
 import { getSupabaseClient } from "./config/supabase.js";
+import logger from "./utils/logger.js";
 
 import portfolioRoutes from "./routes/portfolio.js";
 import blogRoutes from "./routes/blogs.js";
@@ -106,7 +107,7 @@ function normalizeCaseStudy(row) {
 async function writeCache(cachePath, data) {
   await fs.promises.mkdir(CACHE_DIR, { recursive: true });
   await fs.promises.writeFile(cachePath, JSON.stringify(data, null, 2), "utf8");
-  console.log("[CACHE UPDATED]");
+  logger.info("[CACHE UPDATED]");
 }
 
 async function refreshPortfolioCache() {
@@ -132,10 +133,10 @@ async function refreshPortfolioCache() {
     });
 
     await writeCache(PORTFOLIO_CACHE_PATH, data);
-    console.log("[CACHE REFRESH SUCCESS] portfolio");
+    logger.info("[CACHE REFRESH SUCCESS] portfolio");
   } catch (error) {
-    console.error("[CACHE REFRESH FAILED] portfolio", error.message);
-    console.error("[SUPABASE ERROR - KEEPING OLD CACHE]");
+    logger.error("[CACHE REFRESH FAILED] portfolio", { details: error.message });
+    logger.error("[SUPABASE ERROR - KEEPING OLD CACHE]");
   }
 }
 
@@ -163,10 +164,10 @@ async function refreshBlogsCache() {
 
     const data = (rows || []).map(normalizeBlog);
     await writeCache(BLOGS_CACHE_PATH, data);
-    console.log("[CACHE REFRESH SUCCESS] blogs");
+    logger.info("[CACHE REFRESH SUCCESS] blogs");
   } catch (error) {
-    console.error("[CACHE REFRESH FAILED] blogs", error.message);
-    console.error("[SUPABASE ERROR - KEEPING OLD CACHE]");
+    logger.error("[CACHE REFRESH FAILED] blogs", { details: error.message });
+    logger.error("[SUPABASE ERROR - KEEPING OLD CACHE]");
   }
 }
 
@@ -194,15 +195,15 @@ async function refreshCaseStudiesCache() {
 
     const data = (rows || []).map(normalizeCaseStudy);
     await writeCache(CASE_STUDIES_CACHE_PATH, data);
-    console.log("[CACHE REFRESH SUCCESS] case_studies");
+    logger.info("[CACHE REFRESH SUCCESS] case_studies");
   } catch (error) {
-    console.error("[CACHE REFRESH FAILED] case_studies", error.message);
-    console.error("[SUPABASE ERROR - KEEPING OLD CACHE]");
+    logger.error("[CACHE REFRESH FAILED] case_studies", { details: error.message });
+    logger.error("[SUPABASE ERROR - KEEPING OLD CACHE]");
   }
 }
 
 async function refreshAllCaches() {
-  console.log("[AUTO CACHE REFRESH START]");
+  logger.info("[AUTO CACHE REFRESH START]");
   await Promise.all([
     refreshPortfolioCache(),
     refreshBlogsCache(),
@@ -211,11 +212,11 @@ async function refreshAllCaches() {
 }
 
 process.on("uncaughtException", (err) => {
-  console.error("[UNCAUGHT EXCEPTION]", err);
+  logger.error("[UNCAUGHT EXCEPTION]", { error: err });
 });
 
 process.on("unhandledRejection", (reason) => {
-  console.error("[UNHANDLED PROMISE]", reason);
+  logger.error("[UNHANDLED PROMISE]", { details: reason });
 });
 
 setInterval(() => {
@@ -223,12 +224,12 @@ setInterval(() => {
   const oneGb = 1024 * 1024 * 1024;
 
   if (heapUsed > oneGb) {
-    console.warn("[MEMORY WARNING] High memory usage detected.");
+    logger.warn("[MEMORY WARNING] High memory usage detected.");
   }
 }, 60 * 1000);
 
 if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-  console.error("[ENV ERROR] SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is missing.");
+  logger.error("[ENV ERROR] SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY is missing.");
   process.exit(1);
 }
 
@@ -237,7 +238,7 @@ const allowedOrigins = isProduction
   : true;
 
 if (isProduction && !process.env.FRONTEND_URL) {
-  console.error("FRONTEND_URL is required in production");
+  logger.error("FRONTEND_URL is required in production");
   process.exit(1);
 }
 
@@ -267,7 +268,7 @@ app.use(helmet());
 
 app.use((req, res, next) => {
   const timeoutId = setTimeout(() => {
-    console.error(`[REQUEST TIMEOUT] ${req.method} ${req.originalUrl}`);
+    logger.error(`[REQUEST TIMEOUT] ${req.method} ${req.originalUrl}`);
 
     if (!res.headersSent) {
       res.status(504).json({ error: "Request timeout" });
@@ -293,8 +294,8 @@ const limiter = rateLimit({
 
 app.use("/api", limiter);
 
-console.log("Environment:", process.env.NODE_ENV);
-console.log("Frontend URL:", process.env.FRONTEND_URL);
+logger.info(`Environment: ${process.env.NODE_ENV}`);
+logger.info(`Frontend URL: ${process.env.FRONTEND_URL}`);
 
 app.use((req, res, next) => {
   res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
@@ -309,7 +310,7 @@ app.get("/api/health", (req, res) => {
   return res.json({ status: "OK" });
 });
 
-console.log("Health route registered");
+logger.info("Health route registered");
 
 app.get("/", (req, res) => {
   res.send("SERVER RUNNING - STEP 6");
@@ -356,7 +357,7 @@ app.get("/media/:filename", async (req, res) => {
 
     // Handle Supabase errors
     if (!response.ok) {
-      console.error(`Supabase fetch failed: ${response.status} for ${filename}`);
+      logger.error(`Supabase fetch failed: ${response.status} for ${filename}`);
       return res.status(response.status).json({ 
         error: "Image not found or inaccessible" 
       });
@@ -385,7 +386,7 @@ app.get("/media/:filename", async (req, res) => {
     const nodeStream = Readable.fromWeb(response.body);
     
     nodeStream.on("error", (err) => {
-      console.error(`Stream error for ${filename}:`, err.message);
+      logger.error(`Stream error for ${filename}`, { details: err.message });
       if (!res.headersSent) {
         res.status(500).json({ error: "Stream error" });
       }
@@ -395,12 +396,12 @@ app.get("/media/:filename", async (req, res) => {
 
   } catch (err) {
     if (err.name === "AbortError") {
-      console.error(`Request timeout for ${req.params.filename}`);
+      logger.error(`Request timeout for ${req.params.filename}`);
       if (!res.headersSent) {
         res.status(504).json({ error: "Gateway timeout" });
       }
     } else {
-      console.error("Media proxy error:", err.message);
+      logger.error("Media proxy error", { details: err.message });
       if (!res.headersSent) {
         res.status(500).json({ error: "Internal server error" });
       }
@@ -451,7 +452,7 @@ app.get("/debug-supabase", async (req, res) => {
 });
 
 app.use((err, req, res, next) => {
-  console.error("[UNHANDLED ERROR]", err);
+  logger.error("[UNHANDLED ERROR]", { error: err });
 
   if (res.headersSent) {
     return next(err);
@@ -465,10 +466,10 @@ app.use((req, res) => {
 });
 
 const server = app.listen(PORT, () => {
-  console.log("[SERVER STARTED]");
-  console.log("Environment:", process.env.NODE_ENV || "development");
-  console.log("Port:", PORT);
-  console.log("Frontend URL:", process.env.FRONTEND_URL || "not-set");
+  logger.info("[SERVER STARTED]");
+  logger.info(`Environment: ${process.env.NODE_ENV || "development"}`);
+  logger.info(`Port: ${PORT}`);
+  logger.info(`Frontend URL: ${process.env.FRONTEND_URL || "not-set"}`);
 });
 
 refreshAllCaches();
@@ -478,7 +479,7 @@ setInterval(() => {
 }, CACHE_REFRESH_INTERVAL_MS);
 
 function shutdown(signal) {
-  console.log(`Shutting down server... (${signal})`);
+  logger.info(`Shutting down server... (${signal})`);
 
   server.close(() => {
     process.exit(0);

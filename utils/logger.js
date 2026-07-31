@@ -7,6 +7,8 @@ function write(level, entry) {
     console.error(line);
   } else if (level === "warn") {
     console.warn(line);
+  } else if (level === "debug") {
+    console.debug(line);
   } else {
     console.log(line);
   }
@@ -19,6 +21,10 @@ const logger = {
 
   warn(message, meta = {}) {
     write("warn", { message, ...meta });
+  },
+
+  debug(message, meta = {}) {
+    write("debug", { message, ...meta });
   },
 
   error(message, { service, operation, error, ...meta } = {}) {
