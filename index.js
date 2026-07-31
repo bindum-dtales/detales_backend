@@ -26,6 +26,7 @@ import blogRoutes from "./routes/blogs.js";
 import caseStudyRoutes from "./routes/case-studies.js";
 import uploadRoutes from "./routes/uploads.js";
 import healthRoutes from "./routes/health.js";
+import docsRoutes from "./docs/docsRouter.js";
 
 const app = express();
 configureTrustProxy(app);
@@ -330,6 +331,7 @@ app.use("/api/case-studies", caseStudyRoutes);
 app.use("/api/portfolio", portfolioRoutes);
 app.use("/api/uploads", uploadRoutes);
 app.use(healthRoutes);
+app.use("/api/docs", docsRoutes);
 
 app.get("/ping", (req, res) => {
   res.json({ ok: true });
