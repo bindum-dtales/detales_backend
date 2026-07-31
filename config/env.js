@@ -1,0 +1,17 @@
+import { createRequire } from "module";
+
+const require = createRequire(import.meta.url);
+require("dotenv").config();
+
+export const env = {
+  NODE_ENV: process.env.NODE_ENV || "development",
+  PORT: process.env.PORT || 10000,
+  FRONTEND_URL: process.env.FRONTEND_URL,
+  SUPABASE_URL: process.env.SUPABASE_URL,
+  SUPABASE_SERVICE_ROLE_KEY: process.env.SUPABASE_SERVICE_ROLE_KEY,
+  SUPABASE_BUCKET: process.env.SUPABASE_BUCKET
+};
+
+export const isProduction = env.NODE_ENV === "production";
+
+export default env;
