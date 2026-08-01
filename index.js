@@ -318,10 +318,6 @@ app.get("/api/health", (req, res) => {
 
 logger.info("Health route registered");
 
-app.get("/", (req, res) => {
-  res.send("SERVER RUNNING - STEP 6");
-});
-
 app.use("/api/blogs", blogRoutes);
 app.use("/api/case-studies", caseStudyRoutes);
 app.use("/api/portfolio", portfolioRoutes);
@@ -418,47 +414,6 @@ app.get("/media/:filename", async (req, res) => {
   }
 });
 // ============================================================================
-
-app.get("/debug-supabase", async (req, res) => {
-  try {
-    const url = process.env.SUPABASE_URL;
-
-    if (!url) {
-      return res.json({
-        step: "env missing",
-        error: "SUPABASE_URL is not defined"
-      });
-    }
-
-    const dns = await import("dns/promises");
-
-    let resolved;
-    try {
-      resolved = await dns.lookup(new URL(url).hostname);
-    } catch (dnsErr) {
-      return res.json({
-        step: "dns lookup failed",
-        error: dnsErr.message,
-        url
-      });
-    }
-
-    const response = await fetch(url);
-
-    return res.json({
-      step: "success",
-      status: response.status,
-      resolved
-    });
-
-  } catch (err) {
-    return res.json({
-      step: "fetch failed",
-      error: err.message,
-      url: process.env.SUPABASE_URL
-    });
-  }
-});
 
 app.use(errorHandler);
 

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { listBlogs, getBlog, createBlog, updateBlog, deleteBlog } from "../controllers/blogs.controller.js";
 import { validateCreateBlog } from "../validators/blogs.validator.js";
+import requireAuth from "../middleware/auth.js";
 
 const router = Router();
 
@@ -19,8 +20,8 @@ router.use((req, res, next) => {
 router.get("/", listBlogs);
 router.get("/public", listBlogs);
 router.get("/:id", getBlog);
-router.post("/", validateCreateBlog, createBlog);
-router.put("/:id", updateBlog);
-router.delete("/:id", deleteBlog);
+router.post("/", requireAuth, validateCreateBlog, createBlog);
+router.put("/:id", requireAuth, updateBlog);
+router.delete("/:id", requireAuth, deleteBlog);
 
 export default router;

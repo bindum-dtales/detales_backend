@@ -1,6 +1,11 @@
 import express from "express";
 import multer from "multer";
 import { uploadImage, uploadDocx } from "../controllers/uploads.controller.js";
+import requireAuth from "../middleware/auth.js";
+import AppError from "../utils/AppError.js";
+import httpStatus from "../constants/httpStatus.js";
+import errorCodes from "../constants/errorCodes.js";
+import services from "../constants/services.js";
 
 const router = express.Router();
 
@@ -38,15 +43,29 @@ const docxUpload = multer({
   }
 });
 
-router.post("/image", imageUpload.single("image"), uploadImage);
-router.post("/docx", docxUpload.single("file"), uploadDocx);
+router.post("/image", requireAuth, imageUpload.single("image"), uploadImage);
+router.post("/docx", requireAuth, docxUpload.single("file"), uploadDocx);
 
 router.use((err, req, res, next) => {
   if (!err) {
     return next();
   }
 
-  return res.status(400).json({ error: err.message || "Upload error" });
+  // Normalize multer/file-filter errors (and anything else that reaches here)
+  // into an AppError so the centralized error handler in index.js formats
+  // every upload error the same way as the rest of the API. AppErrors
+  // (e.g. from requireAuth) already carry their own status/shape and pass through.
+  if (err instanceof AppError) {
+    return next(err);
+  }
+
+  return next(
+    new AppError(err.message || "Upload error", {
+      status: httpStatus.BAD_REQUEST,
+      service: services.UPLOADS,
+      code: errorCodes.VALIDATION_ERROR
+    })
+  );
 });
 
 export default router;

@@ -6,13 +6,11 @@
  *     summary: List published portfolio items (served from the JSON cache)
  *     responses:
  *       200:
- *         description: Array of portfolio items
+ *         description: Portfolio items retrieved successfully
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/PortfolioItem'
+ *               $ref: '#/components/schemas/PortfolioListResponse'
  *   post:
  *     tags: [Portfolio]
  *     summary: Create a portfolio item
@@ -33,7 +31,13 @@
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/PortfolioItem'
+ *               $ref: '#/components/schemas/PortfolioItemResponse'
+ *       401:
+ *         description: Missing or invalid bearer token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 
 /**
@@ -63,18 +67,19 @@
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success: { type: boolean, example: true }
- *                 message: { type: string, example: "Portfolio item updated successfully" }
- *                 data:
- *                   $ref: '#/components/schemas/PortfolioItem'
+ *               $ref: '#/components/schemas/PortfolioItemResponse'
  *       400:
- *         description: Missing id parameter, or missing title/link/category. Both checks are router-level validators, so they return the legacy error shape.
+ *         description: Missing id parameter, or missing title/link/category
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/LegacyErrorResponse'
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: Missing or invalid bearer token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
  *         description: Portfolio item not found
  *         content:
@@ -88,22 +93,23 @@
  *       - $ref: '#/components/parameters/PortfolioId'
  *     responses:
  *       200:
- *         description: Portfolio item deleted
+ *         description: Portfolio item deleted (the deleted record is returned under `data`)
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success: { type: boolean, example: true }
- *                 message: { type: string, example: "Portfolio item deleted successfully" }
- *                 deleted:
- *                   $ref: '#/components/schemas/PortfolioItem'
+ *               $ref: '#/components/schemas/PortfolioItemResponse'
  *       400:
- *         description: Missing id parameter. Router-level validator, returns the legacy error shape.
+ *         description: Missing id parameter
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/LegacyErrorResponse'
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: Missing or invalid bearer token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
  *         description: Portfolio item not found
  *         content:

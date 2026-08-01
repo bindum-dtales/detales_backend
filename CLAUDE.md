@@ -47,7 +47,6 @@ None of the mutating routes (`POST`/`PUT`/`DELETE` on blogs, case studies, portf
 - `/api/uploads` → `routes/uploads.js`, two `multer` memory-storage instances (`imageUpload`, `docxUpload`) that upload directly to Supabase Storage (bucket from `SUPABASE_BUCKET`) and return the public URL. No resizing/transformation happens server-side.
 - `/media/:filename` → an image reverse-proxy in `index.js` itself (not a router) that fetches from a **hardcoded** Supabase Storage URL (`SUPABASE_STORAGE_URL` constant) and streams it back with CORS/cache headers rewritten for `https://dtales.tech`. This exists to work around ISP routing issues reaching Supabase directly from the frontend.
 - `/api/health`, `/ping` → liveness checks.
-- `/debug-supabase` → diagnostic endpoint that DNS-resolves and fetches `SUPABASE_URL`, returning raw error details in the response. Not gated behind auth or `NODE_ENV` — treat as debug-only, don't rely on it in production flows.
 
 ### CORS is layered twice
 

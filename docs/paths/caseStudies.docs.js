@@ -6,13 +6,11 @@
  *     summary: List published case studies (served from the JSON cache)
  *     responses:
  *       200:
- *         description: Array of case studies
+ *         description: Case studies retrieved successfully
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/CaseStudy'
+ *               $ref: '#/components/schemas/CaseStudyListResponse'
  *   post:
  *     tags: [Case Studies]
  *     summary: Create a case study
@@ -34,13 +32,19 @@
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/CaseStudy'
+ *               $ref: '#/components/schemas/CaseStudyResponse'
  *       400:
- *         description: Missing/invalid title or content. Rejected by the router-level field validator before reaching the controller, so it returns the legacy error shape rather than the standardized one.
+ *         description: Missing/invalid title or content
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/LegacyErrorResponse'
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: Missing or invalid bearer token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 
 /**
@@ -51,13 +55,11 @@
  *     summary: List published case studies (identical to GET /api/case-studies)
  *     responses:
  *       200:
- *         description: Array of case studies
+ *         description: Case studies retrieved successfully
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/CaseStudy'
+ *               $ref: '#/components/schemas/CaseStudyListResponse'
  */
 
 /**
@@ -70,11 +72,11 @@
  *       - $ref: '#/components/parameters/CaseStudyId'
  *     responses:
  *       200:
- *         description: The case study
+ *         description: Case study retrieved successfully
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/CaseStudy'
+ *               $ref: '#/components/schemas/CaseStudyResponse'
  *       404:
  *         description: Case study not found
  *         content:
@@ -103,9 +105,15 @@
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/CaseStudy'
+ *               $ref: '#/components/schemas/CaseStudyResponse'
  *       400:
  *         description: Missing/invalid title or content
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: Missing or invalid bearer token
  *         content:
  *           application/json:
  *             schema:
@@ -127,10 +135,13 @@
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success: { type: boolean, example: true }
- *                 message: { type: string, example: "Case study deleted successfully" }
+ *               $ref: '#/components/schemas/CaseStudyDeleteResponse'
+ *       401:
+ *         description: Missing or invalid bearer token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
  *         description: Case study not found
  *         content:

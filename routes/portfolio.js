@@ -1,6 +1,7 @@
 import express from "express";
 import { listPortfolio, createPortfolio, updatePortfolio, deletePortfolio } from "../controllers/portfolio.controller.js";
 import { validatePortfolioId, validatePortfolioUpdate } from "../validators/portfolio.validator.js";
+import requireAuth from "../middleware/auth.js";
 
 const router = express.Router();
 
@@ -17,8 +18,8 @@ router.use((req, res, next) => {
 });
 
 router.get("/", listPortfolio);
-router.post("/", createPortfolio);
-router.put("/:id", validatePortfolioId, validatePortfolioUpdate, updatePortfolio);
-router.delete("/:id", validatePortfolioId, deletePortfolio);
+router.post("/", requireAuth, createPortfolio);
+router.put("/:id", requireAuth, validatePortfolioId, validatePortfolioUpdate, updatePortfolio);
+router.delete("/:id", requireAuth, validatePortfolioId, deletePortfolio);
 
 export default router;

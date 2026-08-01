@@ -1,4 +1,8 @@
 import { extractContent } from "../services/blogs/blogs.mapper.js";
+import AppError from "../utils/AppError.js";
+import httpStatus from "../constants/httpStatus.js";
+import errorCodes from "../constants/errorCodes.js";
+import services from "../constants/services.js";
 
 export function validateBlogFields({ title, content }) {
   if (!title) {
@@ -19,7 +23,13 @@ export function validateCreateBlog(req, res, next) {
   const error = validateBlogFields({ title, content });
 
   if (error) {
-    return res.status(400).json({ error });
+    return next(
+      new AppError(error, {
+        status: httpStatus.BAD_REQUEST,
+        service: services.BLOGS,
+        code: errorCodes.VALIDATION_ERROR
+      })
+    );
   }
 
   next();

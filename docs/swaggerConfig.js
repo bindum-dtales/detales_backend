@@ -8,27 +8,27 @@ const packageJson = JSON.parse(readFileSync(path.resolve(__dirname, "../package.
 
 const standardErrorSchema = {
   type: "object",
-  description: "Standardized error response produced by the centralized error handler / sendLegacyError formatter.",
+  description: "Standardized error response produced by the centralized error handler for every route in the API.",
   properties: {
     success: { type: "boolean", example: false },
     code: { type: "string", example: "NOT_FOUND" },
     message: { type: "string", example: "Blog not found" },
-    requestId: { type: "string", nullable: true, example: "b5f07c0e-37ee-4af2-8dcd-8057bd6d67f7" }
+    requestId: { type: "string", nullable: true, example: "b5f07c0e-37ee-4af2-8dcd-8057bd6d67f7" },
+    details: { nullable: true, description: "Additional error context, when available." }
   },
-  required: ["success", "code", "message", "requestId"]
+  required: ["success", "code", "message", "requestId", "details"]
 };
 
-const legacyErrorSchema = {
+const standardSuccessSchema = (dataSchema) => ({
   type: "object",
-  description:
-    "Legacy error shape still returned by a small number of pre-existing, untouched code paths " +
-    "(router-level field validators on create endpoints, and multer upload-validation errors).",
+  description: "Standardized success envelope returned by every blogs/case-studies/portfolio/uploads endpoint.",
   properties: {
-    error: { type: "string", example: "Title is required" },
-    details: { type: "string", nullable: true }
+    success: { type: "boolean", example: true },
+    message: { type: "string" },
+    data: dataSchema
   },
-  required: ["error"]
-};
+  required: ["success", "message", "data"]
+});
 
 const blogSchema = {
   type: "object",
@@ -117,6 +117,25 @@ const versionInfoSchema = {
   }
 };
 
+const blogListResponseSchema = standardSuccessSchema({ type: "array", items: { $ref: "#/components/schemas/Blog" } });
+const blogResponseSchema = standardSuccessSchema({ $ref: "#/components/schemas/Blog" });
+const blogDeleteResponseSchema = standardSuccessSchema({ type: "object", nullable: true });
+
+const caseStudyListResponseSchema = standardSuccessSchema({
+  type: "array",
+  items: { $ref: "#/components/schemas/CaseStudy" }
+});
+const caseStudyResponseSchema = standardSuccessSchema({ $ref: "#/components/schemas/CaseStudy" });
+const caseStudyDeleteResponseSchema = standardSuccessSchema({ type: "object", nullable: true });
+
+const portfolioListResponseSchema = standardSuccessSchema({
+  type: "array",
+  items: { $ref: "#/components/schemas/PortfolioItem" }
+});
+const portfolioItemResponseSchema = standardSuccessSchema({ $ref: "#/components/schemas/PortfolioItem" });
+
+const uploadResultResponseSchema = standardSuccessSchema({ $ref: "#/components/schemas/UploadResult" });
+
 const definition = {
   openapi: "3.0.3",
   info: {
@@ -140,11 +159,19 @@ const definition = {
   components: {
     schemas: {
       ErrorResponse: standardErrorSchema,
-      LegacyErrorResponse: legacyErrorSchema,
       Blog: blogSchema,
       CaseStudy: caseStudySchema,
       PortfolioItem: portfolioItemSchema,
       UploadResult: uploadResultSchema,
+      BlogListResponse: blogListResponseSchema,
+      BlogResponse: blogResponseSchema,
+      BlogDeleteResponse: blogDeleteResponseSchema,
+      CaseStudyListResponse: caseStudyListResponseSchema,
+      CaseStudyResponse: caseStudyResponseSchema,
+      CaseStudyDeleteResponse: caseStudyDeleteResponseSchema,
+      PortfolioListResponse: portfolioListResponseSchema,
+      PortfolioItemResponse: portfolioItemResponseSchema,
+      UploadResultResponse: uploadResultResponseSchema,
       HealthStatus: healthStatusSchema,
       ReadinessStatus: readinessStatusSchema,
       VersionInfo: versionInfoSchema

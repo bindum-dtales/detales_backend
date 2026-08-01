@@ -21,15 +21,19 @@
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/UploadResult'
+ *               $ref: '#/components/schemas/UploadResultResponse'
  *       400:
- *         description: Missing/invalid file, or a multer file-filter rejection (wrong mimetype). The multer rejection path uses the router-level legacy error shape; the missing-file case uses the standardized error shape.
+ *         description: Missing/invalid file, or a multer file-filter rejection (wrong mimetype)
  *         content:
  *           application/json:
  *             schema:
- *               oneOf:
- *                 - $ref: '#/components/schemas/ErrorResponse'
- *                 - $ref: '#/components/schemas/LegacyErrorResponse'
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: Missing or invalid bearer token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       500:
  *         description: Storage not configured, or the upload to Supabase Storage failed
  *         content:
@@ -61,15 +65,19 @@
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/UploadResult'
+ *               $ref: '#/components/schemas/UploadResultResponse'
  *       400:
- *         description: Missing/invalid file, or a multer file-filter rejection (must be .docx). The multer rejection path uses the router-level legacy error shape; the missing-file case uses the standardized error shape.
+ *         description: Missing/invalid file, or a multer file-filter rejection (must be .docx)
  *         content:
  *           application/json:
  *             schema:
- *               oneOf:
- *                 - $ref: '#/components/schemas/ErrorResponse'
- *                 - $ref: '#/components/schemas/LegacyErrorResponse'
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: Missing or invalid bearer token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       500:
  *         description: Storage not configured, or the upload to Supabase Storage failed
  *         content:

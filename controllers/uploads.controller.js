@@ -1,32 +1,15 @@
 import asyncHandler from "../middleware/asyncHandler.js";
-import AppError from "../utils/AppError.js";
-import logger from "../utils/logger.js";
-import services from "../constants/services.js";
 import * as uploadsService from "../services/uploads/uploads.service.js";
-import { sendLegacyError } from "../utils/errorResponse.js";
+import { sendSuccess } from "../utils/response.js";
 
 export const uploadImage = asyncHandler(async (req, res) => {
-  try {
-    const data = await uploadsService.uploadImage(req.file);
-    return res.status(200).json(data);
-  } catch (err) {
-    if (!(err instanceof AppError)) {
-      logger.error("Upload route error", { service: services.UPLOADS, operation: "uploadImage", error: err });
-    }
-    return sendLegacyError(res, err);
-  }
+  const data = await uploadsService.uploadImage(req.file);
+  return sendSuccess(res, { status: 200, message: "Image uploaded successfully", data });
 });
 
 export const uploadDocx = asyncHandler(async (req, res) => {
-  try {
-    const data = await uploadsService.uploadDocx(req.file);
-    return res.status(200).json(data);
-  } catch (err) {
-    if (!(err instanceof AppError)) {
-      logger.error("Upload route error", { service: services.UPLOADS, operation: "uploadDocx", error: err });
-    }
-    return sendLegacyError(res, err);
-  }
+  const data = await uploadsService.uploadDocx(req.file);
+  return sendSuccess(res, { status: 200, message: "Document uploaded successfully", data });
 });
 
 export default {

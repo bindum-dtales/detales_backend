@@ -24,10 +24,14 @@ export function createChainableQuery(result = { data: null, error: null }) {
   return chain;
 }
 
-export function createMockSupabaseClient({ queryResult, storageResult } = {}) {
+export function createMockSupabaseClient({ queryResult, storageResult, authResult } = {}) {
   const uploadResult = (storageResult && storageResult.upload) || { data: { path: "mock/path" }, error: null };
   const publicUrlResult = (storageResult && storageResult.publicUrl) || {
     data: { publicUrl: "https://mock.local/storage/mock/path" }
+  };
+  const getUserResult = authResult || {
+    data: { user: { id: "mock-user-id", email: "mock-user@dtales.tech" } },
+    error: null
   };
 
   return {
@@ -37,6 +41,9 @@ export function createMockSupabaseClient({ queryResult, storageResult } = {}) {
         upload: jest.fn(async () => uploadResult),
         getPublicUrl: jest.fn(() => publicUrlResult)
       }))
+    },
+    auth: {
+      getUser: jest.fn(async () => getUserResult)
     }
   };
 }

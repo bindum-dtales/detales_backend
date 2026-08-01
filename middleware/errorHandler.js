@@ -13,6 +13,7 @@ export default function errorHandler(err, req, res, next) {
   const code = isAppError ? err.code : "INTERNAL_ERROR";
   const message = err.message || "Internal server error";
   const requestId = req.requestId || null;
+  const details = isAppError && err.details !== undefined ? err.details : null;
 
   logger.error(message, {
     service,
@@ -24,6 +25,7 @@ export default function errorHandler(err, req, res, next) {
     status,
     code,
     message,
-    requestId
+    requestId,
+    details
   });
 }

@@ -6,13 +6,11 @@
  *     summary: List published blogs (served from the JSON cache)
  *     responses:
  *       200:
- *         description: Array of blogs
+ *         description: Blogs retrieved successfully
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Blog'
+ *               $ref: '#/components/schemas/BlogListResponse'
  *   post:
  *     tags: [Blogs]
  *     summary: Create a blog
@@ -34,13 +32,19 @@
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Blog'
+ *               $ref: '#/components/schemas/BlogResponse'
  *       400:
- *         description: Missing/invalid title or content. Rejected by the router-level field validator before reaching the controller, so it returns the legacy error shape rather than the standardized one.
+ *         description: Missing/invalid title or content
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/LegacyErrorResponse'
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: Missing or invalid bearer token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  */
 
 /**
@@ -51,13 +55,11 @@
  *     summary: List published blogs (identical to GET /api/blogs)
  *     responses:
  *       200:
- *         description: Array of blogs
+ *         description: Blogs retrieved successfully
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Blog'
+ *               $ref: '#/components/schemas/BlogListResponse'
  */
 
 /**
@@ -70,11 +72,11 @@
  *       - $ref: '#/components/parameters/BlogId'
  *     responses:
  *       200:
- *         description: The blog
+ *         description: Blog retrieved successfully
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Blog'
+ *               $ref: '#/components/schemas/BlogResponse'
  *       404:
  *         description: Blog not found
  *         content:
@@ -103,9 +105,15 @@
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Blog'
+ *               $ref: '#/components/schemas/BlogResponse'
  *       400:
  *         description: Missing/invalid title or content
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: Missing or invalid bearer token
  *         content:
  *           application/json:
  *             schema:
@@ -127,10 +135,13 @@
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 success: { type: boolean, example: true }
- *                 message: { type: string, example: "Blog deleted successfully" }
+ *               $ref: '#/components/schemas/BlogDeleteResponse'
+ *       401:
+ *         description: Missing or invalid bearer token
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       404:
  *         description: Blog not found
  *         content:

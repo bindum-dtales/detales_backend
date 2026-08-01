@@ -7,6 +7,7 @@ import {
   deleteCaseStudy
 } from "../controllers/caseStudies.controller.js";
 import { validateCreateCaseStudy } from "../validators/caseStudies.validator.js";
+import requireAuth from "../middleware/auth.js";
 
 const router = Router();
 
@@ -25,8 +26,8 @@ router.use((req, res, next) => {
 router.get("/", listCaseStudies);
 router.get("/public", listCaseStudies);
 router.get("/:id", getCaseStudy);
-router.post("/", validateCreateCaseStudy, createCaseStudy);
-router.put("/:id", updateCaseStudy);
-router.delete("/:id", deleteCaseStudy);
+router.post("/", requireAuth, validateCreateCaseStudy, createCaseStudy);
+router.put("/:id", requireAuth, updateCaseStudy);
+router.delete("/:id", requireAuth, deleteCaseStudy);
 
 export default router;
