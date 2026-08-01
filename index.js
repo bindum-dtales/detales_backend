@@ -10,6 +10,7 @@ import { Readable } from "stream";
 import { getSupabaseClient } from "./config/supabase.js";
 import logger from "./utils/logger.js";
 import requestId from "./middleware/requestId.js";
+import metricsTracker from "./middleware/metricsTracker.js";
 import errorHandler from "./middleware/errorHandler.js";
 import {
   configureTrustProxy,
@@ -26,12 +27,14 @@ import blogRoutes from "./routes/blogs.js";
 import caseStudyRoutes from "./routes/case-studies.js";
 import uploadRoutes from "./routes/uploads.js";
 import healthRoutes from "./routes/health.js";
+import metricsRoutes from "./routes/metrics.js";
 import docsRoutes from "./docs/docsRouter.js";
 
 const app = express();
 configureTrustProxy(app);
 disablePoweredBy(app);
 app.use(requestId);
+app.use(metricsTracker);
 const PORT = process.env.PORT || 10000;
 const isProduction = process.env.NODE_ENV === "production";
 
@@ -331,6 +334,7 @@ app.use("/api/case-studies", caseStudyRoutes);
 app.use("/api/portfolio", portfolioRoutes);
 app.use("/api/uploads", uploadRoutes);
 app.use(healthRoutes);
+app.use(metricsRoutes);
 app.use("/api/docs", docsRoutes);
 
 app.get("/ping", (req, res) => {
