@@ -38,6 +38,10 @@ export function getApplicationMetrics() {
   return { ...state };
 }
 
+export function stopEventLoopMonitor() {
+  eventLoopHistogram?.disable();
+}
+
 function getEventLoopLagMs() {
   if (!eventLoopHistogram || Number.isNaN(eventLoopHistogram.mean)) {
     return null;
@@ -104,5 +108,6 @@ export default {
   incrementActiveRequests,
   decrementActiveRequests,
   getApplicationMetrics,
-  collectMetrics
+  collectMetrics,
+  stopEventLoopMonitor
 };

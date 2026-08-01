@@ -12,6 +12,7 @@ import logger from "./utils/logger.js";
 import requestId from "./middleware/requestId.js";
 import metricsTracker from "./middleware/metricsTracker.js";
 import errorHandler from "./middleware/errorHandler.js";
+import { registerShutdown } from "./services/system/shutdown.service.js";
 import {
   configureTrustProxy,
   disablePoweredBy,
@@ -226,14 +227,6 @@ async function refreshAllCaches() {
     refreshCaseStudiesCache()
   ]);
 }
-
-process.on("uncaughtException", (err) => {
-  logger.error("[UNCAUGHT EXCEPTION]", { error: err });
-});
-
-process.on("unhandledRejection", (reason) => {
-  logger.error("[UNHANDLED PROMISE]", { details: reason });
-});
 
 setInterval(() => {
   const heapUsed = process.memoryUsage().heapUsed;
@@ -486,17 +479,4 @@ setInterval(() => {
   refreshAllCaches();
 }, CACHE_REFRESH_INTERVAL_MS);
 
-function shutdown(signal) {
-  logger.info(`Shutting down server... (${signal})`);
-
-  server.close(() => {
-    process.exit(0);
-  });
-
-  setTimeout(() => {
-    process.exit(0);
-  }, 5000).unref();
-}
-
-process.on("SIGTERM", () => shutdown("SIGTERM"));
-process.on("SIGINT", () => shutdown("SIGINT"));
+registerShutdown(server);
