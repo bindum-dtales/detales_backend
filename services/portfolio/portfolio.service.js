@@ -38,6 +38,14 @@ async function withRetry(operation, { label, failureMessage }) {
 
     return result || [];
   } catch (lastError) {
+    // TEMPORARY DEBUG LOGGING — remove after root cause is found
+    console.error("[TEMP DEBUG] Raw portfolio DB error:", lastError);
+    console.error("[TEMP DEBUG] message:", lastError?.message);
+    console.error("[TEMP DEBUG] code:", lastError?.code);
+    console.error("[TEMP DEBUG] details:", lastError?.details);
+    console.error("[TEMP DEBUG] hint:", lastError?.hint);
+    console.error("[TEMP DEBUG] stack:", lastError?.stack);
+
     logger.error("Supabase operation failed after retries", {
       service: services.PORTFOLIO,
       operation: label,

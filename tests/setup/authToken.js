@@ -1,16 +1,8 @@
-function base64url(obj) {
-  return Buffer.from(JSON.stringify(obj)).toString("base64url");
-}
+import jwt from "jsonwebtoken";
 
-export function makeTestToken(payload = {}) {
-  const header = base64url({ alg: "HS256", typ: "JWT" });
-  const body = base64url({
-    sub: "mock-user-id",
-    exp: Math.floor(Date.now() / 1000) + 3600,
-    ...payload
-  });
-
-  return `${header}.${body}.mock-signature`;
+export function makeTestToken(payload = {}, options = {}) {
+  const signOptions = payload.exp !== undefined ? { ...options } : { expiresIn: "1h", ...options };
+  return jwt.sign({ role: "admin", ...payload }, process.env.JWT_SECRET, signOptions);
 }
 
 export default { makeTestToken };

@@ -136,6 +136,26 @@ const portfolioItemResponseSchema = standardSuccessSchema({ $ref: "#/components/
 
 const uploadResultResponseSchema = standardSuccessSchema({ $ref: "#/components/schemas/UploadResult" });
 
+const loginRequestSchema = {
+  type: "object",
+  properties: {
+    username: { type: "string" },
+    password: { type: "string", format: "password" }
+  },
+  required: ["username", "password"]
+};
+
+const loginResultSchema = {
+  type: "object",
+  properties: {
+    token: { type: "string", description: "JWT bearer token, signed with a 24h expiry." },
+    expiresIn: { type: "integer", description: "Token lifetime in seconds.", example: 86400 }
+  },
+  required: ["token", "expiresIn"]
+};
+
+const loginResponseSchema = standardSuccessSchema({ $ref: "#/components/schemas/LoginResult" });
+
 const definition = {
   openapi: "3.0.3",
   info: {
@@ -150,6 +170,7 @@ const definition = {
     }
   ],
   tags: [
+    { name: "Auth", description: "Admin login and token issuance." },
     { name: "Blogs", description: "Blog CRUD, backed by the JSON file cache." },
     { name: "Case Studies", description: "Case study CRUD, backed by the JSON file cache." },
     { name: "Portfolio", description: "Portfolio item CRUD, backed by the JSON file cache." },
@@ -172,6 +193,9 @@ const definition = {
       PortfolioListResponse: portfolioListResponseSchema,
       PortfolioItemResponse: portfolioItemResponseSchema,
       UploadResultResponse: uploadResultResponseSchema,
+      LoginRequest: loginRequestSchema,
+      LoginResult: loginResultSchema,
+      LoginResponse: loginResponseSchema,
       HealthStatus: healthStatusSchema,
       ReadinessStatus: readinessStatusSchema,
       VersionInfo: versionInfoSchema
