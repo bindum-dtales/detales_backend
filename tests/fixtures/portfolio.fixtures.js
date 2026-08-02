@@ -1,7 +1,8 @@
 export const portfolioRow = {
   id: 1,
   title: "Test Portfolio Item",
-  category: "web",
+  capability: "Engineering",
+  subcategory: "Web Development",
   cover_image_url: "https://example.com/cover.jpg",
   link: "https://example.com"
 };

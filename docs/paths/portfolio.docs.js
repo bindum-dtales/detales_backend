@@ -23,7 +23,8 @@
  *             properties:
  *               title: { type: string }
  *               link: { type: string }
- *               category: { type: string }
+ *               capability: { type: string }
+ *               subcategory: { type: string }
  *               cover_image_url: { type: string, nullable: true }
  *     responses:
  *       201:
@@ -54,11 +55,12 @@
  *         application/json:
  *           schema:
  *             type: object
- *             required: [title, link, category]
+ *             required: [title, link, capability, subcategory]
  *             properties:
  *               title: { type: string }
  *               link: { type: string }
- *               category: { type: string }
+ *               capability: { type: string }
+ *               subcategory: { type: string }
  *               cover_image_url: { type: string, nullable: true }
  *               published: { type: boolean }
  *     responses:
@@ -69,7 +71,7 @@
  *             schema:
  *               $ref: '#/components/schemas/PortfolioItemResponse'
  *       400:
- *         description: Missing id parameter, or missing title/link/category
+ *         description: Missing id parameter, or missing title/link/capability/subcategory
  *         content:
  *           application/json:
  *             schema:

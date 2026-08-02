@@ -20,15 +20,15 @@ export function validatePortfolioId(req, res, next) {
 }
 
 export function validatePortfolioUpdate(req, res, next) {
-  const { title, link, category } = req.body || {};
+  const { title, link, capability, subcategory } = req.body || {};
 
-  if (!title || !link || !category) {
+  if (!title || !link || !capability || !subcategory) {
     return next(
       new AppError("Missing required fields", {
         status: httpStatus.BAD_REQUEST,
         service: services.PORTFOLIO,
         code: errorCodes.VALIDATION_ERROR,
-        details: "title, link, and category are required"
+        details: "title, link, capability, and subcategory are required"
       })
     );
   }

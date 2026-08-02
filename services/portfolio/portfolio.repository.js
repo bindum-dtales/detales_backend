@@ -5,7 +5,7 @@ import services from "../../constants/services.js";
 import { supabaseConfig } from "../../config/appConfig.js";
 
 const TABLE = "portfolio";
-const SELECT_COLUMNS = "id, title, category, cover_image_url, link";
+const SELECT_COLUMNS = "id, title, capability, subcategory, cover_image_url, link";
 
 function getClientOrThrow() {
   const supabase = getSupabaseClient();

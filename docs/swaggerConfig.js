@@ -65,7 +65,8 @@ const portfolioItemSchema = {
   properties: {
     id: { type: "integer" },
     title: { type: "string" },
-    category: { type: "string" },
+    capability: { type: "string" },
+    subcategory: { type: "string" },
     cover_image_url: { type: "string", nullable: true },
     link: { type: "string" }
   }

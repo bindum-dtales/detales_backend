@@ -3,9 +3,9 @@ export function mapPortfolioListItem(row) {
     return null;
   }
 
-  const { id, title, category, cover_image_url, link } = row;
+  const { id, title, capability, subcategory, cover_image_url, link } = row;
 
-  return { id, title, category, cover_image_url: cover_image_url ?? null, link };
+  return { id, title, capability, subcategory, cover_image_url: cover_image_url ?? null, link };
 }
 
 export function mapPortfolioList(rows) {

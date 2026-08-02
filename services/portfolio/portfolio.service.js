@@ -88,14 +88,20 @@ export async function refreshPortfolioCache() {
 export async function createPortfolio(payload) {
   assertSupabaseConfigured();
 
-  const { title, link, category, cover_image_url } = payload || {};
+  const { title, link, capability, subcategory, cover_image_url } = payload || {};
 
   const record = await withRetry(
-    () => portfolioRepository.insertPortfolio({ title, link, category, cover_image_url }),
+    () => portfolioRepository.insertPortfolio({ title, link, capability, subcategory, cover_image_url }),
     { label: "insertPortfolio", failureMessage: "Portfolio create failed" }
   );
 
   await portfolioCache.clearPortfolio();
+
+  try {
+    await refreshPortfolioCache();
+  } catch (error) {
+    logger.error("Portfolio cache rebuild after create failed", { service: services.PORTFOLIO, error });
+  }
 
   logger.info("Portfolio item created", { service: services.PORTFOLIO, id: record?.id });
 
@@ -118,12 +124,13 @@ export async function updatePortfolio(id, payload) {
     });
   }
 
-  const { title, link, category, cover_image_url, published } = payload || {};
+  const { title, link, capability, subcategory, cover_image_url, published } = payload || {};
 
   const updatePayload = {
     title,
     link,
-    category,
+    capability,
+    subcategory,
     cover_image_url,
     ...(typeof published === "boolean" ? { published } : {}),
     updated_at: new Date().toISOString()
@@ -135,6 +142,12 @@ export async function updatePortfolio(id, payload) {
   });
 
   await portfolioCache.clearPortfolio();
+
+  try {
+    await refreshPortfolioCache();
+  } catch (error) {
+    logger.error("Portfolio cache rebuild after update failed", { service: services.PORTFOLIO, error });
+  }
 
   logger.info("Portfolio item updated", { service: services.PORTFOLIO, id });
 
@@ -158,6 +171,12 @@ export async function deletePortfolio(id) {
   }
 
   await portfolioCache.clearPortfolio();
+
+  try {
+    await refreshPortfolioCache();
+  } catch (error) {
+    logger.error("Portfolio cache rebuild after delete failed", { service: services.PORTFOLIO, error });
+  }
 
   logger.info("Portfolio item deleted", { service: services.PORTFOLIO, id });
 

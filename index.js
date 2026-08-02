@@ -139,7 +139,7 @@ async function refreshPortfolioCache() {
     const data = await runSupabaseQueryWithRetry(async (signal) => {
       let query = supabase
         .from("portfolio")
-        .select("id, title, category, cover_image_url, link")
+        .select("id, title, capability, subcategory, cover_image_url, link")
         .eq("published", true)
         .order("created_at", { ascending: false });
 
