@@ -29,6 +29,7 @@ import caseStudyRoutes from "./routes/case-studies.js";
 import uploadRoutes from "./routes/uploads.js";
 import healthRoutes from "./routes/health.js";
 import metricsRoutes from "./routes/metrics.js";
+import authRoutes from "./routes/auth.js";
 import docsRoutes from "./docs/docsRouter.js";
 
 const app = express();
@@ -241,36 +242,32 @@ if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
   process.exit(1);
 }
 
-const allowedOrigins = isProduction
-  ? [...new Set([process.env.FRONTEND_URL, "https://dtales.tech"].filter(Boolean))]
-  : true;
-
 if (isProduction && !process.env.FRONTEND_URL) {
   logger.error("FRONTEND_URL is required in production");
   process.exit(1);
 }
 
+const productionOrigins = [process.env.FRONTEND_URL, "https://dtales.tech", "https://www.dtales.tech"].filter(
+  Boolean
+);
+const developmentOrigins = ["http://localhost:5173", "http://127.0.0.1:5173"];
+const allowedOrigins = [...new Set([...productionOrigins, ...developmentOrigins])];
+
 const corsOptions = {
-  origin: allowedOrigins,
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error("Not allowed by CORS"));
+  },
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["*"],
   credentials: true,
   optionsSuccessStatus: 200
 };
 
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
-
-app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "https://dtales.tech");
-  res.header("Access-Control-Allow-Headers", "*");
-  res.header("Access-Control-Allow-Methods", "GET,POST,PUT,DELETE,OPTIONS");
-
-  if (req.method === "OPTIONS") {
-    return res.sendStatus(200);
-  }
-
-  return next();
-});
 app.use(express.json({ limit: bodyLimit }));
 app.use(helmetMiddleware);
 app.use(compressionMiddleware);
@@ -322,6 +319,7 @@ app.use("/api/blogs", blogRoutes);
 app.use("/api/case-studies", caseStudyRoutes);
 app.use("/api/portfolio", portfolioRoutes);
 app.use("/api/uploads", uploadRoutes);
+app.use("/api/auth", authRoutes);
 app.use(healthRoutes);
 app.use(metricsRoutes);
 app.use("/api/docs", docsRoutes);
