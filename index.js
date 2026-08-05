@@ -97,6 +97,7 @@ function normalizeBlog(row) {
     title: row.title,
     slug: row.slug,
     cover_image_url: row?.cover_image_url ?? null,
+    company_name: row?.company_name ?? null,
     excerpt,
     content,
     published: row.published,
@@ -114,6 +115,7 @@ function normalizeCaseStudy(row) {
     title: row.title,
     slug: row.slug,
     cover_image_url: row?.cover_image_url ?? null,
+    company_name: row?.company_name ?? null,
     excerpt,
     content,
     published: row.published,
@@ -139,7 +141,7 @@ async function refreshPortfolioCache() {
     const data = await runSupabaseQueryWithRetry(async (signal) => {
       let query = supabase
         .from("portfolio")
-        .select("id, title, capability, subcategory, cover_image_url, link")
+        .select("id, title, capability, subcategory, cover_image_url, link, content, company_name, description, featured")
         .eq("published", true)
         .order("created_at", { ascending: false });
 

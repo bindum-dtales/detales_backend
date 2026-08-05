@@ -1,11 +1,27 @@
 [
   {
+    "id": 28,
+    "title": "test2",
+    "capability": "Sales Enablement",
+    "subcategory": "Slide Decks",
+    "cover_image_url": "https://upkfbtqljrnlufflknkv.supabase.co/storage/v1/object/public/dtales-media/images/1785700532185-ChatGPT%20Image%20Jul%2030,%202026,%2011_31_43%20PM.png",
+    "link": "https://youtu.be/yENpD7RqfyQ",
+    "content": null,
+    "company_name": null,
+    "description": null,
+    "featured": false
+  },
+  {
     "id": 27,
     "title": "r",
     "capability": "Product Marketing",
     "subcategory": "LinkedIn Posts",
     "cover_image_url": "https://upkfbtqljrnlufflknkv.supabase.co/storage/v1/object/public/dtales-media/images/1785699739849-WhatsApp%20Image%202026-07-13%20at%204.15.50%20PM%20(3).jpeg",
-    "link": "https://youtu.be/yENpD7RqfyQ"
+    "link": "https://youtu.be/yENpD7RqfyQ",
+    "content": null,
+    "company_name": null,
+    "description": null,
+    "featured": false
   },
   {
     "id": 26,
@@ -13,6 +29,10 @@
     "capability": "Product Marketing",
     "subcategory": "LinkedIn Posts",
     "cover_image_url": "https://upkfbtqljrnlufflknkv.supabase.co/storage/v1/object/public/dtales-media/images/1785699575655-ChatGPT%20Image%20Jul%2030,%202026,%2011_31_43%20PM.png",
-    "link": "https://youtu.be/yENpD7RqfyQ"
+    "link": "https://youtu.be/yENpD7RqfyQ",
+    "content": null,
+    "company_name": null,
+    "description": null,
+    "featured": false
   }
 ]

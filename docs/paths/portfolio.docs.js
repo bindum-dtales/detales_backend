@@ -13,19 +13,24 @@
  *               $ref: '#/components/schemas/PortfolioListResponse'
  *   post:
  *     tags: [Portfolio]
- *     summary: Create a portfolio item
+ *     summary: Create a portfolio item. Exactly one of `link` or `content` must be provided.
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
+ *             required: [title, capability, subcategory]
  *             properties:
  *               title: { type: string }
- *               link: { type: string }
+ *               link: { type: string, description: "External project link. Mutually exclusive with content." }
+ *               content: { type: string, nullable: true, description: "HTML document body (converted from DOCX client-side). Mutually exclusive with link." }
  *               capability: { type: string }
  *               subcategory: { type: string }
  *               cover_image_url: { type: string, nullable: true }
+ *               company_name: { type: string, nullable: true }
+ *               description: { type: string, nullable: true }
+ *               featured: { type: boolean }
  *     responses:
  *       201:
  *         description: Portfolio item created
@@ -33,6 +38,12 @@
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/PortfolioItemResponse'
+ *       400:
+ *         description: Missing required fields, or link/content provided together or neither provided
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
  *       401:
  *         description: Missing or invalid bearer token
  *         content:
@@ -46,7 +57,7 @@
  * /api/portfolio/{id}:
  *   put:
  *     tags: [Portfolio]
- *     summary: Update a portfolio item
+ *     summary: Update a portfolio item. Setting `link` clears any stored `content` and vice versa; omitting both leaves the existing value untouched.
  *     parameters:
  *       - $ref: '#/components/parameters/PortfolioId'
  *     requestBody:
@@ -55,13 +66,17 @@
  *         application/json:
  *           schema:
  *             type: object
- *             required: [title, link, capability, subcategory]
+ *             required: [title, capability, subcategory]
  *             properties:
  *               title: { type: string }
- *               link: { type: string }
+ *               link: { type: string, description: "External project link. Mutually exclusive with content." }
+ *               content: { type: string, nullable: true, description: "HTML document body. Mutually exclusive with link." }
  *               capability: { type: string }
  *               subcategory: { type: string }
  *               cover_image_url: { type: string, nullable: true }
+ *               company_name: { type: string, nullable: true }
+ *               description: { type: string, nullable: true }
+ *               featured: { type: boolean }
  *               published: { type: boolean }
  *     responses:
  *       200:
@@ -71,7 +86,7 @@
  *             schema:
  *               $ref: '#/components/schemas/PortfolioItemResponse'
  *       400:
- *         description: Missing id parameter, or missing title/link/capability/subcategory
+ *         description: Missing id parameter, missing title/capability/subcategory, or link/content provided together or neither resolves
  *         content:
  *           application/json:
  *             schema:

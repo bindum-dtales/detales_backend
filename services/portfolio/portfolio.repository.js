@@ -5,7 +5,8 @@ import services from "../../constants/services.js";
 import { supabaseConfig } from "../../config/appConfig.js";
 
 const TABLE = "portfolio";
-const SELECT_COLUMNS = "id, title, capability, subcategory, cover_image_url, link";
+const SELECT_COLUMNS =
+  "id, title, capability, subcategory, cover_image_url, link, content, company_name, description, featured";
 
 function getClientOrThrow() {
   const supabase = getSupabaseClient();
@@ -56,7 +57,7 @@ export async function findPortfolioById(id) {
   const supabase = getClientOrThrow();
 
   return runQuery(
-    () => supabase.from(TABLE).select("id").eq("id", id).single(),
+    () => supabase.from(TABLE).select(SELECT_COLUMNS).eq("id", id).single(),
     "findPortfolioById"
   );
 }

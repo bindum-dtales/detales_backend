@@ -7,6 +7,7 @@ import { retryAsync } from "../../utils/retry.js";
 import * as portfolioRepository from "./portfolio.repository.js";
 import * as portfolioCache from "./portfolio.cache.js";
 import * as portfolioMapper from "./portfolio.mapper.js";
+import { validatePortfolioLinkContent } from "../../validators/portfolio.validator.js";
 import { supabaseConfig } from "../../config/appConfig.js";
 
 function assertSupabaseConfigured() {
@@ -88,10 +89,33 @@ export async function refreshPortfolioCache() {
 export async function createPortfolio(payload) {
   assertSupabaseConfigured();
 
-  const { title, link, capability, subcategory, cover_image_url } = payload || {};
+  const { title, capability, subcategory, cover_image_url, company_name, description, featured } = payload || {};
+
+  const { link, content } = portfolioMapper.resolvePortfolioLinkContent(payload || {}, null);
+
+  const linkContentError = validatePortfolioLinkContent({ link, content });
+
+  if (linkContentError) {
+    throw new AppError(linkContentError, {
+      status: httpStatus.BAD_REQUEST,
+      service: services.PORTFOLIO,
+      code: errorCodes.VALIDATION_ERROR
+    });
+  }
 
   const record = await withRetry(
-    () => portfolioRepository.insertPortfolio({ title, link, capability, subcategory, cover_image_url }),
+    () =>
+      portfolioRepository.insertPortfolio({
+        title,
+        link,
+        content,
+        capability,
+        subcategory,
+        cover_image_url,
+        company_name,
+        description,
+        featured
+      }),
     { label: "insertPortfolio", failureMessage: "Portfolio create failed" }
   );
 
@@ -124,15 +148,32 @@ export async function updatePortfolio(id, payload) {
     });
   }
 
-  const { title, link, capability, subcategory, cover_image_url, published } = payload || {};
+  const { title, capability, subcategory, cover_image_url, published, company_name, description, featured } =
+    payload || {};
+
+  const { link, content } = portfolioMapper.resolvePortfolioLinkContent(payload || {}, existing);
+
+  const linkContentError = validatePortfolioLinkContent({ link, content });
+
+  if (linkContentError) {
+    throw new AppError(linkContentError, {
+      status: httpStatus.BAD_REQUEST,
+      service: services.PORTFOLIO,
+      code: errorCodes.VALIDATION_ERROR
+    });
+  }
 
   const updatePayload = {
     title,
     link,
+    content,
     capability,
     subcategory,
     cover_image_url,
+    company_name,
+    description,
     ...(typeof published === "boolean" ? { published } : {}),
+    ...(typeof featured === "boolean" ? { featured } : {}),
     updated_at: new Date().toISOString()
   };
 

@@ -103,9 +103,10 @@ export async function createBlog(payload) {
   const title = ((payload && payload.title) || "").toString().trim();
   const content = blogsMapper.extractContent(payload && payload.content);
   const cover_image_url = (payload && payload.cover_image_url) ?? null;
+  const company_name = (payload && payload.company_name) ? payload.company_name.toString().trim() : null;
   const published = (payload && payload.published) === true;
 
-  const validationError = validateBlogFields({ title, content });
+  const validationError = validateBlogFields({ title, content, company_name, published });
 
   if (validationError) {
     throw new AppError(validationError, {
@@ -120,7 +121,7 @@ export async function createBlog(payload) {
   let record;
   try {
     record = await withRetry(
-      () => blogsRepository.insertBlog({ title, excerpt, content, cover_image_url, published }),
+      () => blogsRepository.insertBlog({ title, excerpt, content, cover_image_url, company_name, published }),
       { label: "insertBlog" }
     );
   } catch (error) {
@@ -156,10 +157,14 @@ export async function updateBlog(id, payload) {
   const content = contentRaw !== "" ? contentRaw : current.content || "";
   const cover_image_url =
     payload && payload.cover_image_url !== undefined ? payload.cover_image_url : current.cover_image_url ?? null;
+  const company_name =
+    payload && payload.company_name !== undefined
+      ? (payload.company_name ? payload.company_name.toString().trim() : null)
+      : current.company_name ?? null;
   const published =
     payload && typeof payload.published === "boolean" ? payload.published : current.published === true;
 
-  const validationError = validateBlogFields({ title, content });
+  const validationError = validateBlogFields({ title, content, company_name, published });
 
   if (validationError) {
     throw new AppError(validationError, {
@@ -180,6 +185,7 @@ export async function updateBlog(id, payload) {
           excerpt,
           content,
           cover_image_url,
+          company_name,
           published,
           updated_at: new Date().toISOString()
         }),

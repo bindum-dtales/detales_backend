@@ -4,7 +4,7 @@ import httpStatus from "../constants/httpStatus.js";
 import errorCodes from "../constants/errorCodes.js";
 import services from "../constants/services.js";
 
-export function validateCaseStudyFields({ title, content }) {
+export function validateCaseStudyFields({ title, content, company_name, published }) {
   if (!title) {
     return "Title is required";
   }
@@ -13,14 +13,20 @@ export function validateCaseStudyFields({ title, content }) {
     return "Content is required (must be HTML string)";
   }
 
+  if (published && (!company_name || !company_name.toString().trim())) {
+    return "Company name is required before publishing";
+  }
+
   return null;
 }
 
 export function validateCreateCaseStudy(req, res, next) {
   const title = (req.body.title || "").toString().trim();
   const content = extractContent(req.body.content);
+  const company_name = req.body.company_name ? req.body.company_name.toString().trim() : "";
+  const published = req.body.published === true;
 
-  const error = validateCaseStudyFields({ title, content });
+  const error = validateCaseStudyFields({ title, content, company_name, published });
 
   if (error) {
     return next(

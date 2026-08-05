@@ -68,7 +68,11 @@ const portfolioItemSchema = {
     capability: { type: "string" },
     subcategory: { type: "string" },
     cover_image_url: { type: "string", nullable: true },
-    link: { type: "string" }
+    link: { type: "string", nullable: true, description: "External project link. Mutually exclusive with content." },
+    content: { type: "string", nullable: true, description: "HTML document body. Mutually exclusive with link." },
+    company_name: { type: "string", nullable: true },
+    description: { type: "string", nullable: true },
+    featured: { type: "boolean" }
   }
 };
 

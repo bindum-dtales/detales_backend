@@ -32,6 +32,7 @@ export function normalizeBlog(row) {
     title: row.title,
     slug: row.slug,
     cover_image_url,
+    company_name: row?.company_name ?? null,
     excerpt,
     content,
     published: row.published,
