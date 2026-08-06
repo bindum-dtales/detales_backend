@@ -138,13 +138,22 @@ export async function uploadDocx(file) {
 
   const urlData = uploadsStorage.getPublicUrl({ bucket, path: filePath });
 
+  // Category is metadata only here — DOCX is still stored as-is (no
+  // conversion happens server-side today for any attachment type).
+  const attachmentType = uploadsMapper.detectAttachmentType(file.originalname);
+
   logger.info("Upload docx: success", {
     service: services.UPLOADS,
     operation: "uploadDocx",
-    url: urlData?.publicUrl
+    url: urlData?.publicUrl,
+    attachmentType
   });
 
-  return uploadsMapper.toUploadResponse(urlData?.publicUrl);
+  return uploadsMapper.toUploadResponse(urlData?.publicUrl, {
+    originalName: file.originalname,
+    mimeType: file.mimetype,
+    attachmentType
+  });
 }
 
 export default {

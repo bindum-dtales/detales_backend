@@ -79,7 +79,11 @@ const portfolioItemSchema = {
 const uploadResultSchema = {
   type: "object",
   properties: {
-    url: { type: "string", format: "uri" }
+    url: { type: "string", format: "uri" },
+    attachmentUrl: { type: "string", format: "uri", nullable: true, description: "Same as url. Present on /api/uploads/docx responses." },
+    attachmentMime: { type: "string", nullable: true, description: "Detected MIME type. Present on /api/uploads/docx responses." },
+    attachmentType: { type: "string", enum: ["document", "image"], nullable: true, description: "Present on /api/uploads/docx responses." },
+    attachmentName: { type: "string", nullable: true, description: "Original filename. Present on /api/uploads/docx responses." }
   },
   required: ["url"]
 };

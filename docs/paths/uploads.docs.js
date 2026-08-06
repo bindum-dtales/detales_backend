@@ -47,7 +47,12 @@
  * /api/uploads/docx:
  *   post:
  *     tags: [Uploads]
- *     summary: Upload a DOCX document directly to Supabase Storage
+ *     summary: Upload a portfolio attachment (document or image) directly to Supabase Storage
+ *     description: >
+ *       Accepts one attachment field covering both documents
+ *       (doc, docx, pdf, txt, rtf, md, csv, xls, xlsx, odt, ods, xml, json, yaml, yml)
+ *       and images (jpg, jpeg, png, webp, gif, bmp, svg, avif, tif, tiff).
+ *       Files are stored as-is; no server-side conversion happens for any type.
  *     requestBody:
  *       required: true
  *       content:
@@ -67,7 +72,7 @@
  *             schema:
  *               $ref: '#/components/schemas/UploadResultResponse'
  *       400:
- *         description: Missing/invalid file, or a multer file-filter rejection (must be .docx)
+ *         description: Missing/invalid file, or a multer file-filter rejection (unsupported extension)
  *         content:
  *           application/json:
  *             schema:

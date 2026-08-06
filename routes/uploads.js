@@ -6,6 +6,7 @@ import AppError from "../utils/AppError.js";
 import httpStatus from "../constants/httpStatus.js";
 import errorCodes from "../constants/errorCodes.js";
 import services from "../constants/services.js";
+import * as uploadsMapper from "../services/uploads/uploads.mapper.js";
 
 const router = express.Router();
 
@@ -26,19 +27,21 @@ const imageUpload = multer({
   }
 });
 
-// DOCX uploads: no image filtering, 10MB limit for documents
+// Portfolio attachment uploads: one field for both documents and images
+// (see DOCUMENT/IMAGE extension lists in uploads.mapper.js). Validation is
+// extension-based, same approach the old "DOCX only" check used
+// (file.originalname.endsWith(...)), since mimetypes for formats like
+// .md/.yaml/.csv are inconsistent across browsers. 10MB limit unchanged.
 const docxUpload = multer({
   storage: multer.memoryStorage(),
   limits: {
     fileSize: 10 * 1024 * 1024, // 10MB limit for documents
   },
   fileFilter: (req, file, cb) => {
-    // Accept DOCX files only
-    if (file.mimetype === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
-        file.originalname.endsWith(".docx")) {
+    if (uploadsMapper.isAllowedAttachment(file.originalname)) {
       cb(null, true);
     } else {
-      cb(new Error("Only DOCX files are allowed"), false);
+      cb(new Error("Unsupported file type for attachment upload"), false);
     }
   }
 });

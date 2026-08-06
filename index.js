@@ -18,7 +18,7 @@ import {
   disablePoweredBy,
   helmetMiddleware,
   compressionMiddleware,
-  createRateLimiter,
+  apiRateLimiter,
   bodyLimit
 } from "./middleware/security.js";
 import { supabaseConfig, cacheConfig, serverConfig } from "./config/appConfig.js";
@@ -295,9 +295,7 @@ app.use((req, res, next) => {
   next();
 });
 
-const limiter = createRateLimiter();
-
-app.use("/api", limiter);
+app.use("/api", apiRateLimiter);
 
 logger.info(`Environment: ${process.env.NODE_ENV}`);
 logger.info(`Frontend URL: ${process.env.FRONTEND_URL}`);
